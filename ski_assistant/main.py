@@ -33,7 +33,8 @@ import sys
 from datetime import datetime
 
 # ── ensure package root is on path when run as script ─────────────────────────
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if __package__ is None:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ski_assistant.decision_engine import (
     UserPreferences,
@@ -258,7 +259,8 @@ def _resolve_time(time_arg: str | None) -> datetime:
             return datetime.strptime(time_arg, "%Y-%m-%d %H:%M")
         except ValueError:
             try:
-                return datetime.strptime(time_arg, "%Y-%m-%d")
+                dt = datetime.strptime(time_arg, "%Y-%m-%d")
+                return dt.replace(hour=10)  # default to 10:00 for date-only input
             except ValueError:
                 print(red(f"  ⚠  Cannot parse time '{time_arg}'. Using now."))
 
