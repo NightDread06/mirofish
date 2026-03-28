@@ -15,7 +15,7 @@ import atexit
 import logging
 from datetime import datetime, timezone
 
-logger = logging.getLogger('mirofish.scheduler')
+logger = logging.getLogger('mirofish.ski.scheduler')
 
 _scheduler = None
 
