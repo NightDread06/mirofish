@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: mirofish-backend
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && python run.py"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: WEATHER_API
+        value: open-meteo
+      - key: AVORIAZ_LAT
+        value: "46.3627"
+      - key: AVORIAZ_LON
+        value: "6.6330"
+      - key: REFRESH_INTERVAL_MINUTES
+        value: "10"
+      - key: CACHE_TTL_SECONDS
+        value: "600"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: LLM_API_KEY
+        sync: false
+      - key: ZEP_API_KEY
+        sync: false
+
+  - type: web
+    name: mirofish-frontend
+    env: node
+    buildCommand: "cd frontend && npm install && npm run build"
+    startCommand: "cd frontend && npm run preview"
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://mirofish-backend.onrender.com/api

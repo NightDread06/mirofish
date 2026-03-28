@@ -12,3 +12,10 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/backend/uploads
+    environment:
+      # Ski dashboard scheduler settings
+      WEATHER_API: open-meteo
+      AVORIAZ_LAT: "46.3627"
+      AVORIAZ_LON: "6.6330"
+      REFRESH_INTERVAL_MINUTES: "10"
+      CACHE_TTL_SECONDS: "600"

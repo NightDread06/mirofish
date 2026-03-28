@@ -33,3 +33,13 @@ python-dotenv>=1.0.0
 
 # 数据验证
 pydantic>=2.0.0
+
+# ============= 滑雪仪表板 (Ski Dashboard) =============
+# HTTP requests for weather & webcam APIs
+requests>=2.31.0
+
+# Background task scheduler (weather refresh, camera status checks)
+APScheduler>=3.10.0
+
+# Result caching
+Flask-Caching>=2.1.0
