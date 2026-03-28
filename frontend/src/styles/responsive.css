@@ -1,0 +1,72 @@
+/* Base responsive grid */
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .grid.grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid.grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+  .grid.grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1280px) {
+  .grid { grid-template-columns: repeat(4, 1fr); }
+  .grid.grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Responsive text sizes */
+@media (max-width: 640px) {
+  .text-2xl { font-size: var(--font-size-xl); }
+  .text-xl { font-size: var(--font-size-lg); }
+  .text-lg { font-size: var(--font-size-base); }
+}
+
+/* Responsive padding */
+.p-responsive {
+  padding: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .p-responsive { padding: var(--spacing-lg); }
+}
+
+@media (min-width: 1024px) {
+  .p-responsive { padding: var(--spacing-xl); }
+}
+
+/* Mobile nav accommodation */
+@media (max-width: 640px) {
+  .container { padding: 0 var(--spacing-sm); }
+  .card { margin-bottom: var(--spacing-sm); }
+}
+
+/* Touch-friendly button sizes */
+@media (max-width: 768px) {
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Flexible containers for mobile */
+.flex-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+  .flex-responsive {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
