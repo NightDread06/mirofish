@@ -24,15 +24,15 @@ from app.config import Config
 
 def main():
     """主函数"""
-    # 验证配置
+    # 验证配置（仅警告，不退出 — ski assistant endpoints work without LLM/Zep keys）
     errors = Config.validate()
     if errors:
-        print("配置错误:")
+        print("配置警告 (部分功能不可用):")
         for err in errors:
             print(f"  - {err}")
-        print("\n请检查 .env 文件中的配置")
-        sys.exit(1)
-    
+        print("  → Ski Assistant endpoints (/api/ski/*) remain fully functional.")
+        print()
+
     # 创建应用
     app = create_app()
     

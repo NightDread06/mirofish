@@ -1,5 +1,6 @@
-import axios from './index'
+import axios from 'axios'
 
+// Use relative URL so requests hit the same server (ski_server.py or dev proxy)
 const BASE = '/api/ski'
 
 function buildParams(opts = {}) {
