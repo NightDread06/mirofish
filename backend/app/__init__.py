@@ -9,7 +9,7 @@ import warnings
 # 需要在所有其他导入之前设置
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 
 from .config import Config
@@ -72,7 +72,23 @@ def create_app(config_class=Config):
     @app.route('/health')
     def health():
         return {'status': 'ok', 'service': 'MiroFish Backend'}
-    
+
+    # 生产环境：提供前端静态文件（Vue SPA）
+    dist_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '../../../frontend/dist')
+    )
+    if os.path.isdir(dist_path):
+        @app.route('/', defaults={'path': ''})
+        @app.route('/<path:path>')
+        def serve_frontend(path):
+            # Resolve to an absolute path and confirm it stays inside dist_path
+            full = os.path.realpath(os.path.join(dist_path, path))
+            if not full.startswith(dist_path + os.sep) and full != dist_path:
+                return {'error': 'Not found'}, 404
+            if path and os.path.isfile(full):
+                return send_from_directory(dist_path, path)
+            return send_from_directory(dist_path, 'index.html')
+
     if should_log_startup:
         logger.info("MiroFish Backend 启动完成")
     
