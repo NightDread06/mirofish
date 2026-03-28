@@ -22,17 +22,23 @@ from __future__ import annotations
 import os
 import sys
 import textwrap
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 import numpy as np
 
-# ── graceful matplotlib backend (headless-safe) ───────────────────────────────
+# ── graceful matplotlib backend (headless-safe, overridable) ─────────────────
 import matplotlib
-matplotlib.use("Agg")   # non-interactive; saves to file
+_sa_backend = os.environ.get("SKI_ASSISTANT_MPL_BACKEND")
+if _sa_backend:
+    matplotlib.use(_sa_backend)
+elif (
+    not os.environ.get("DISPLAY")
+    and not os.environ.get("WAYLAND_DISPLAY")
+    and not os.environ.get("MPLBACKEND")
+):
+    matplotlib.use("Agg")   # non-interactive; safe for headless environments
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-from matplotlib.patches import FancyBboxPatch
 
 from ski_assistant.simulation import (
     AVORIAZ_RUNS,
@@ -63,7 +69,17 @@ from ski_assistant.decision_engine import (
 # TERMINAL COLOUR HELPERS
 # ──────────────────────────────────────────────────────────────────────────────
 
-_USE_COLOUR = sys.stdout.isatty() or os.environ.get("FORCE_COLOUR")
+_force_colour_env = os.environ.get("FORCE_COLOUR")
+if _force_colour_env is None:
+    _USE_COLOUR = sys.stdout.isatty()
+else:
+    _val = _force_colour_env.strip().lower()
+    if _val in {"1", "true", "yes", "on"}:
+        _USE_COLOUR = True
+    elif _val in {"0", "false", "no", "off", ""}:
+        _USE_COLOUR = False
+    else:
+        _USE_COLOUR = False  # unrecognized value; default to off for safety
 
 def _c(text: str, code: str) -> str:
     """Wrap text in ANSI colour code (no-op if not tty)."""
@@ -521,11 +537,20 @@ def plot_stress_comparison(
     width = 0.18
     fig, ax = plt.subplots(figsize=(16, 6))
 
+    def _short_scenario_label(name: str) -> str:
+        """Derive a concise label from a scenario name, splitting on any dash-like separator."""
+        for sep in ("—", "–", "-"):
+            if sep in name:
+                head, tail = name.split(sep, 1)
+                tail = tail.strip()
+                return tail if tail else head.strip()
+        return name.strip()
+
     bar_sets = [
         ("Base", [base_enj.get(n, 0) for n in run_names], "#2196F3"),
-        (scenarios[0].name.split("—")[1].strip(), [scenario_enj[0].get(n, 0) for n in run_names], "#FF9800"),
-        (scenarios[1].name.split("—")[1].strip(), [scenario_enj[1].get(n, 0) for n in run_names], "#F44336"),
-        (scenarios[2].name.split("—")[1].strip(), [scenario_enj[2].get(n, 0) for n in run_names], "#9C27B0"),
+        (_short_scenario_label(scenarios[0].name), [scenario_enj[0].get(n, 0) for n in run_names], "#FF9800"),
+        (_short_scenario_label(scenarios[1].name), [scenario_enj[1].get(n, 0) for n in run_names], "#F44336"),
+        (_short_scenario_label(scenarios[2].name), [scenario_enj[2].get(n, 0) for n in run_names], "#9C27B0"),
     ]
 
     for i, (label, vals, colour) in enumerate(bar_sets):
@@ -553,7 +578,7 @@ def plot_weekly_outlook(
     Weekly overview: best run enjoyment score for each day (10:00 reference hour).
     Shows snow and crowd separately as stacked components.
     """
-    from ski_assistant.simulation import DAILY_WEATHER, compute_snow_score, compute_crowd_level, compute_enjoyment
+    from ski_assistant.simulation import DAILY_WEATHER
 
     dates = sorted(DAILY_WEATHER.keys())
     labels = []

@@ -82,7 +82,7 @@ DEFAULT_PREFS = UserPreferences()
 # RECOMMENDATION REASON GENERATOR
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _build_reason(rc: RunConditions, rank: int = 1) -> str:
+def _build_reason(rc: RunConditions) -> str:
     """Generate a concise one-line reason for recommending a run."""
     r   = rc.run
     parts = []
@@ -135,7 +135,7 @@ def get_best_run(
     if not filtered:
         filtered = candidates   # fallback: ignore difficulty filter
     best = filtered[0]
-    best.recommendation_reason = _build_reason(best, rank=1)
+    best.recommendation_reason = _build_reason(best)
     return best
 
 
@@ -158,7 +158,7 @@ def get_top_3(
 
     top = filtered[:3]
     for i, rc in enumerate(top):
-        rc.recommendation_reason = _build_reason(rc, rank=i + 1)
+        rc.recommendation_reason = _build_reason(rc)
     return top
 
 
@@ -446,7 +446,6 @@ def sensitivity_analysis(
     ]
     base_avg = float(np.mean(base_scores))
 
-    date_key = dt.strftime("%Y-%m-%d")
     base_temp, snowfall_cm, cloud_cover = get_weather(dt)
 
     results = []
@@ -554,7 +553,6 @@ def stress_test(
     scenarios: List[StressScenario] = []
 
     # ── A. Warm spell ─────────────────────────────────────────────────────
-    date_key = dt.strftime("%Y-%m-%d")
     base_temp, snowfall_cm, cloud_cover = get_weather(dt)
     warm_temp = base_temp + 6.0
     warm_conds = []
