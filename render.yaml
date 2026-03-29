@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: mirofish-ski
+    runtime: python
+    buildCommand: pip install -r requirements.txt && cd frontend && npm ci && npm run build
+    startCommand: python3 ski_server.py
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
