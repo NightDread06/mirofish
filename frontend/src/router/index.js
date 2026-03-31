@@ -7,15 +7,19 @@ import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
 import SkiAssistantView from '../views/SkiAssistantView.vue'
 
+const isStaticBuild = !!import.meta.env.VITE_USE_HASH_ROUTER
+
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    // On the static GitHub Pages build the backend doesn't exist,
+    // so redirect straight to the ski assistant.
+    component: isStaticBuild ? SkiAssistantView : Home,
+    name: isStaticBuild ? 'SkiAssistant' : 'Home',
   },
   {
     path: '/ski',
-    name: 'SkiAssistant',
+    name: isStaticBuild ? 'SkiAssistantAlt' : 'SkiAssistant',
     component: SkiAssistantView
   },
   {
@@ -50,9 +54,10 @@ const routes = [
   }
 ]
 
-// Use hash history on GitHub Pages (no server-side routing); web history elsewhere
-const history = import.meta.env.VITE_USE_HASH_ROUTER
-  ? createWebHashHistory(import.meta.env.BASE_URL)
+// Hash history for GitHub Pages (no server routing); web history everywhere else.
+// Don't pass BASE_URL to hash history — it only applies to the path, not the hash.
+const history = isStaticBuild
+  ? createWebHashHistory()
   : createWebHistory(import.meta.env.BASE_URL)
 
 const router = createRouter({ history, routes })
