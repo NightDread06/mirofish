@@ -321,12 +321,11 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { skiApi } from '../api/ski.js'
+import { getTop3, getTimeStrategy, generateDayPlan, getHiddenGems, sensitivityAnalysis, stressTest, decisionRules } from '../lib/skiDecisionEngine.js'
 
 const loading = ref(false)
 const error = ref('')
 
-// Default to today at 10:00 (within season)
 const params = reactive({
   time: '2026-03-28T10:00',
   difficulty: 'all',
@@ -345,43 +344,40 @@ const data = reactive({
   rules: null,
 })
 
-function buildOpts() {
+function buildPrefs() {
   return {
-    time: params.time.replace('T', ' '),
-    difficulty: params.difficulty,
-    prioritizeSnow: params.prioritizeSnow,
-    avoidCrowds: params.avoidCrowds,
-    tourists: params.tourists,
-    seed: 42,
+    difficulty_level: params.difficulty,
+    prioritize_snow: params.prioritizeSnow,
+    avoid_crowds: params.avoidCrowds,
   }
 }
 
-async function runAll() {
+// Run entire engine synchronously in JS — no network calls needed
+function runAll() {
   loading.value = true
   error.value = ''
-  const opts = buildOpts()
-  try {
-    const [dashboard, strategy, itinerary, gems, sensitivity, stress, rules] = await Promise.all([
-      skiApi.getDashboard(opts),
-      skiApi.getStrategy(opts),
-      skiApi.getItinerary(opts),
-      skiApi.getGems(opts),
-      skiApi.getSensitivity(opts),
-      skiApi.getStress(opts),
-      skiApi.getRules(opts),
-    ])
-    data.dashboard = dashboard
-    data.strategy = strategy
-    data.itinerary = itinerary
-    data.gems = gems
-    data.sensitivity = sensitivity
-    data.stress = stress
-    data.rules = rules
-  } catch (e) {
-    error.value = e?.response?.data?.error || e.message || 'Failed to load ski data.'
-  } finally {
-    loading.value = false
-  }
+  // Use setTimeout to let Vue render the loading state before the sync computation
+  setTimeout(() => {
+    try {
+      const dt = new Date(params.time)
+      const prefs = buildPrefs()
+      const tourists = params.tourists
+      const seed = 42
+
+      const top3 = getTop3(dt, prefs, tourists, seed)
+      data.dashboard = { timestamp: dt.toISOString(), top_3: top3 }
+      data.strategy = { strategies: getTimeStrategy(dt, prefs, tourists, seed) }
+      data.itinerary = generateDayPlan(dt, prefs, tourists, seed)
+      data.gems = { gems: getHiddenGems(dt, prefs, tourists, seed) }
+      data.sensitivity = { sensitivity: sensitivityAnalysis(dt, tourists, seed) }
+      data.stress = { scenarios: stressTest(dt, prefs, seed) }
+      data.rules = { rules: decisionRules(dt) }
+    } catch (e) {
+      error.value = e.message || 'Engine error.'
+    } finally {
+      loading.value = false
+    }
+  }, 30)
 }
 
 function formatTimestamp(iso) {
