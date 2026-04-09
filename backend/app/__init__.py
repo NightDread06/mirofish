@@ -64,14 +64,26 @@ def create_app(config_class=Config):
     
     # 注册蓝图
     from .api import graph_bp, simulation_bp, report_bp
+    from .api.ski import ski_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    app.register_blueprint(ski_bp, url_prefix='/api/ski')
     
     # 健康检查
     @app.route('/health')
     def health():
         return {'status': 'ok', 'service': 'MiroFish Backend'}
+    
+    # Start background scheduler (only in the main worker process)
+    if not debug_mode or is_reloader_process:
+        from .scheduler import start_scheduler
+        import atexit
+        start_scheduler()
+        from .scheduler import stop_scheduler
+        atexit.register(stop_scheduler)
+        if should_log_startup:
+            logger.info("Ski dashboard scheduler registered")
     
     if should_log_startup:
         logger.info("MiroFish Backend 启动完成")

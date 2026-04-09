@@ -1,0 +1,32 @@
+app = "mirofish"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 5001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 5001
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[env]
+  FLASK_ENV = "production"
+  WEATHER_API = "open-meteo"
+  AVORIAZ_LAT = "46.3627"
+  AVORIAZ_LON = "6.6330"
+  REFRESH_INTERVAL_MINUTES = "10"
+  CACHE_TTL_SECONDS = "600"
