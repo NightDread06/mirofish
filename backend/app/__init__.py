@@ -63,10 +63,17 @@ def create_app(config_class=Config):
         return response
     
     # 注册蓝图
-    from .api import graph_bp, simulation_bp, report_bp
+    from .api import graph_bp, simulation_bp, report_bp, ski_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    app.register_blueprint(ski_bp, url_prefix='/api/ski')
+
+    # 启动滑雪数据后台调度器
+    if should_log_startup:
+        logger.info("正在启动滑雪数据调度器...")
+    from .scheduler import start_scheduler
+    start_scheduler()
     
     # 健康检查
     @app.route('/health')

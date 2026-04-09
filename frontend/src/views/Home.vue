@@ -4,6 +4,9 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <router-link to="/ski" class="github-link ski-link">
+          ⛷ Ski Dashboard <span class="arrow">→</span>
+        </router-link>
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           访问我们的Github主页 <span class="arrow">↗</span>
         </a>
@@ -363,6 +366,20 @@ const startSimulation = () => {
   align-items: center;
   gap: 8px;
   transition: opacity 0.2s;
+}
+
+.ski-link {
+  background: #ff4500;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+
+.ski-link:hover { opacity: 0.9; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .github-link:hover {

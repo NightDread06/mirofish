@@ -5,12 +5,18 @@ import SimulationView from '../views/SimulationView.vue'
 import SimulationRunView from '../views/SimulationRunView.vue'
 import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
+import SkiDashboard from '../views/SkiDashboard.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/ski',
+    name: 'SkiDashboard',
+    component: SkiDashboard
   },
   {
     path: '/process/:projectId',
@@ -50,3 +56,4 @@ const router = createRouter({
 })
 
 export default router
+

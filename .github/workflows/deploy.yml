@@ -1,0 +1,115 @@
+name: Deploy Ski Dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Backend: lint + import check
+  # ──────────────────────────────────────────────────────────
+  backend-check:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          uv pip install --system flask flask-cors apscheduler numpy matplotlib \
+            python-dotenv pydantic openai
+
+      - name: Install ski_assistant dependencies
+        run: pip install numpy matplotlib
+
+      - name: Verify ski API imports
+        run: |
+          python -c "
+          import sys, os
+          sys.path.insert(0, '.')
+          from ski_assistant.simulation import AVORIAZ_RUNS, get_weather
+          from ski_assistant.decision_engine import get_top_3, UserPreferences
+          print('ski_assistant imports OK')
+          "
+
+      - name: Verify backend imports
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'backend')
+          sys.path.insert(0, '.')
+          from app.live_data import fetch_conditions, fetch_recommendations
+          from app.scheduler import get_scheduler_status
+          print('backend ski imports OK')
+          "
+        env:
+          FLASK_DEBUG: 'false'
+
+  # ──────────────────────────────────────────────────────────
+  # Frontend: install + build
+  # ──────────────────────────────────────────────────────────
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: 'http://localhost:5001'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────
+  # Docker build (on main push only, no push to registry)
+  # ──────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker build test
+    runs-on: ubuntu-latest
+    needs: [backend-check, frontend-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: mirofish:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
