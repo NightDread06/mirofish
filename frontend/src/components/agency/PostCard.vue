@@ -89,10 +89,6 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-IE', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
-async function copyText(text) {
-  await copy(text)
-}
-
 async function copyText(text, field) {
   await copy(text)
   copiedField.value = field

@@ -125,6 +125,35 @@ def create_app(config_class=Config):
     def health():
         return {'status': 'ok', 'service': 'MiroFish Backend'}
 
+    # ── Serve Vue SPA (unified production mode) ───────────────────────────────
+    # When SERVE_FRONTEND=true, Flask serves the built Vue dist folder so the
+    # entire app (API + frontend) runs on a single port / URL.
+    if os.environ.get('SERVE_FRONTEND', 'false').lower() == 'true':
+        from flask import send_from_directory
+
+        frontend_dist = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '../../frontend/dist')
+        )
+
+        if os.path.isdir(frontend_dist):
+            if should_log_startup:
+                logger.info(f"Serving Vue SPA from {frontend_dist}")
+
+            @app.route('/', defaults={'path': ''})
+            @app.route('/<path:path>')
+            def serve_spa(path):
+                """Catch-all: serve static asset if it exists, else return index.html."""
+                import os as _os
+                full = _os.path.join(frontend_dist, path)
+                if path and _os.path.isfile(full):
+                    return send_from_directory(frontend_dist, path)
+                return send_from_directory(frontend_dist, 'index.html')
+        else:
+            logger.warning(
+                f"SERVE_FRONTEND=true but dist not found at {frontend_dist}. "
+                "Run `npm run build` first."
+            )
+
     if should_log_startup:
         logger.info("MiroFish Backend 启动完成")
 
