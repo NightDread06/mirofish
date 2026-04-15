@@ -17,4 +17,6 @@ from .agency_auth import agency_auth_bp  # noqa: E402, F401
 from .agency_clients import agency_clients_bp  # noqa: E402, F401
 from .agency_content import agency_content_bp  # noqa: E402, F401
 from .agency_outreach import agency_outreach_bp  # noqa: E402, F401
+from .agency_chat import agency_chat_bp  # noqa: E402, F401
+from .agency_scheduler_api import agency_scheduler_bp  # noqa: E402, F401
 

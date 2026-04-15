@@ -103,6 +103,27 @@ class Config:
     # Allowed origins for agency CORS (comma-separated)
     ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')
 
+    # ── Email / SMTP ───────────────────────────────────────────────────────────
+    SMTP_HOST      = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+    SMTP_PORT      = int(os.environ.get('SMTP_PORT', '587'))
+    SMTP_USER      = os.environ.get('SMTP_USER', '')
+    SMTP_PASSWORD  = os.environ.get('SMTP_PASSWORD', '')
+    SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'ContentAgency.ai')
+
+    # ── IMAP inbox polling ─────────────────────────────────────────────────────
+    IMAP_HOST     = os.environ.get('IMAP_HOST', 'imap.gmail.com')
+    IMAP_USER     = os.environ.get('IMAP_USER', '')
+    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', '')
+
+    # ── Google Maps Places API ─────────────────────────────────────────────────
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+
+    # ── Buffer API ─────────────────────────────────────────────────────────────
+    BUFFER_ACCESS_TOKEN = os.environ.get('BUFFER_ACCESS_TOKEN', '')
+    # JSON dict mapping platform name → Buffer profile ID
+    # e.g. '{"linkedin": "64abc...", "instagram": "64def...", "facebook": "64ghi..."}'
+    BUFFER_PROFILE_IDS = os.environ.get('BUFFER_PROFILE_IDS', '{}')
+
     @classmethod
     def validate(cls):
         """验证必要配置"""
