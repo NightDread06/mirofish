@@ -12,3 +12,9 @@ from . import graph  # noqa: E402, F401
 from . import simulation  # noqa: E402, F401
 from . import report  # noqa: E402, F401
 
+# Agency module blueprints (imported from their own files, not created here)
+from .agency_auth import agency_auth_bp  # noqa: E402, F401
+from .agency_clients import agency_clients_bp  # noqa: E402, F401
+from .agency_content import agency_content_bp  # noqa: E402, F401
+from .agency_outreach import agency_outreach_bp  # noqa: E402, F401
+

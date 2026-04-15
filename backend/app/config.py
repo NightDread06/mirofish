@@ -62,7 +62,47 @@ class Config:
     REPORT_AGENT_MAX_TOOL_CALLS = int(os.environ.get('REPORT_AGENT_MAX_TOOL_CALLS', '5'))
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))
     REPORT_AGENT_TEMPERATURE = float(os.environ.get('REPORT_AGENT_TEMPERATURE', '0.5'))
-    
+
+    # ── Agency Module ──────────────────────────────────────────────────────────
+
+    # SQLite DB for agency data (users, clients, content, outreach)
+    # Stored inside the existing uploads/ volume so Docker picks it up automatically
+    _AGENCY_DB_DIR = os.path.join(os.path.dirname(__file__), '../uploads/agency')
+    AGENCY_DB_PATH = os.path.join(_AGENCY_DB_DIR, 'agency.db')
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'DATABASE_URL',
+        f"sqlite:///{os.path.abspath(AGENCY_DB_PATH)}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # JWT — use a strong random secret in production
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'CHANGE-ME-IN-PRODUCTION-use-64-chars')
+    JWT_ACCESS_TOKEN_EXPIRES = 3600       # 1 hour in seconds
+    JWT_REFRESH_TOKEN_EXPIRES = 604800    # 7 days in seconds
+    JWT_TOKEN_LOCATION = ['headers', 'cookies']
+    JWT_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
+    JWT_COOKIE_SAMESITE = 'Lax'
+    JWT_COOKIE_CSRF_PROTECT = False       # Disabled for API; CORS policy handles this
+
+    # Claude API (Anthropic SDK — separate from the general OpenAI-compatible LLM)
+    CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY', '')
+    CLAUDE_BASE_URL = 'https://api.anthropic.com'
+    CLAUDE_HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+    CLAUDE_SONNET_MODEL = 'claude-sonnet-4-6'
+
+    # Agency admin credentials
+    AGENCY_ADMIN_EMAIL = os.environ.get('AGENCY_ADMIN_EMAIL', 'admin@example.com')
+
+    # GDPR: auto-purge inactive churned clients after this many days
+    AGENCY_MAX_CONTENT_AGE_DAYS = int(os.environ.get('AGENCY_MAX_CONTENT_AGE_DAYS', '90'))
+
+    # Rate limiting (in-memory for single-process; upgrade to Redis for multi-worker)
+    RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
+    RATELIMIT_DEFAULT = '200 per day;50 per hour'
+
+    # Allowed origins for agency CORS (comma-separated)
+    ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000')
+
     @classmethod
     def validate(cls):
         """验证必要配置"""

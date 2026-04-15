@@ -1,9 +1,16 @@
 <template>
   <router-view />
+  <!-- GDPR cookie consent banner (shown on first visit to any /agency/* route) -->
+  <CookieConsent v-if="isAgencyRoute" />
 </template>
 
 <script setup>
-// 使用 Vue Router 来管理页面
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import CookieConsent from './components/agency/CookieConsent.vue'
+
+const route = useRoute()
+const isAgencyRoute = computed(() => route.path.startsWith('/agency'))
 </script>
 
 <style>
