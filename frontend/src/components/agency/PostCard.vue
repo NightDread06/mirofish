@@ -1,70 +1,72 @@
 <template>
   <div class="post-card">
-    <!-- Header -->
-    <div class="post-header">
-      <div class="post-meta">
-        <span class="platform-badge" :class="post.platform">
+    <header class="pc-head">
+      <div class="pc-meta">
+        <span class="plat-badge" :class="post.platform">
           {{ platformLabel(post.platform) }}
         </span>
-        <span class="type-badge" :class="post.post_type">{{ post.post_type }}</span>
-        <span class="day-badge">Day {{ post.day_number }}</span>
-        <span class="date-label">{{ formatDate(post.scheduled_date) }}</span>
+        <span class="ca-pill type-pill">{{ post.post_type }}</span>
+        <span class="pc-day">Day {{ post.day_number }}</span>
+        <span class="pc-date">{{ formatDate(post.scheduled_date) }}</span>
       </div>
-      <div class="post-status">
-        <span v-if="post.is_approved" class="status approved">✓ Approved</span>
-        <span v-else-if="post.revision_note" class="status revision">⚠ Revision requested</span>
+      <div class="pc-status">
+        <span v-if="post.is_approved" class="ca-pill ok">✓ Approved</span>
+        <span v-else-if="post.revision_note" class="ca-pill warn">Revision requested</span>
       </div>
-    </div>
+    </header>
 
-    <!-- Copy -->
-    <div class="post-section">
-      <div class="section-label">
-        Post copy
-        <button class="copy-btn" @click="copyText(post.post_copy)" :class="{ copied: copiedField === 'copy' }">
-          {{ copiedField === 'copy' ? 'Copied!' : 'Copy' }}
-        </button>
+    <section class="pc-section">
+      <div class="pc-label">
+        <span class="ca-kicker">Post copy</span>
+        <button
+          class="copy-btn"
+          @click="copyText(post.post_copy, 'copy')"
+          :class="{ copied: copiedField === 'copy' }"
+          :aria-label="copiedField === 'copy' ? 'Copied' : 'Copy post copy'"
+        >{{ copiedField === 'copy' ? 'Copied' : 'Copy' }}</button>
       </div>
-      <p class="post-copy">{{ post.post_copy }}</p>
-    </div>
+      <p class="pc-copy">{{ post.post_copy }}</p>
+    </section>
 
-    <!-- Hashtags -->
-    <div v-if="post.hashtags" class="post-section">
-      <div class="section-label">
-        Hashtags
-        <button class="copy-btn" @click="copyText(post.hashtags)" :class="{ copied: copiedField === 'hashtags' }">
-          {{ copiedField === 'hashtags' ? 'Copied!' : 'Copy' }}
-        </button>
+    <section v-if="post.hashtags" class="pc-section">
+      <div class="pc-label">
+        <span class="ca-kicker">Hashtags</span>
+        <button
+          class="copy-btn"
+          @click="copyText(post.hashtags, 'hashtags')"
+          :class="{ copied: copiedField === 'hashtags' }"
+          :aria-label="copiedField === 'hashtags' ? 'Copied' : 'Copy hashtags'"
+        >{{ copiedField === 'hashtags' ? 'Copied' : 'Copy' }}</button>
       </div>
-      <p class="hashtag-line">{{ post.hashtags }}</p>
-    </div>
+      <p class="pc-hash">{{ post.hashtags }}</p>
+    </section>
 
-    <!-- CTA -->
-    <div v-if="post.call_to_action" class="post-section">
-      <div class="section-label">Call to action</div>
-      <p class="cta-text">{{ post.call_to_action }}</p>
-    </div>
+    <section v-if="post.call_to_action" class="pc-section">
+      <span class="ca-kicker">Call to action</span>
+      <p class="pc-cta">{{ post.call_to_action }}</p>
+    </section>
 
-    <!-- Visual description -->
-    <div v-if="post.visual_description" class="post-section">
-      <div class="section-label">Visual direction</div>
-      <p class="visual-text">{{ post.visual_description }}</p>
-    </div>
+    <section v-if="post.visual_description" class="pc-section">
+      <span class="ca-kicker">Visual direction</span>
+      <p class="pc-visual">{{ post.visual_description }}</p>
+    </section>
 
-    <!-- Revision note (if present) -->
-    <div v-if="post.revision_note" class="revision-note">
-      <strong>Revision note:</strong> {{ post.revision_note }}
-    </div>
+    <aside v-if="post.revision_note" class="pc-revnote">
+      <strong>Revision note</strong>
+      <p>{{ post.revision_note }}</p>
+    </aside>
 
-    <!-- Actions -->
-    <div class="post-actions">
-      <button class="btn-primary" @click="copyAll">Copy All Text</button>
-      <button v-if="!post.is_approved" class="btn-outline" @click="$emit('approve', post)">
-        Mark Approved
+    <footer class="pc-actions">
+      <button class="ca-btn" @click="copyAll">
+        {{ copiedField === 'all' ? 'Copied all text' : 'Copy all text' }}
       </button>
-      <button class="btn-ghost" @click="$emit('request-revision', post)">
-        Request Revision
+      <button v-if="!post.is_approved" class="ca-btn secondary" @click="$emit('approve', post)">
+        Mark approved
       </button>
-    </div>
+      <button class="ca-btn ghost" @click="$emit('request-revision', post)">
+        Request revision
+      </button>
+    </footer>
   </div>
 </template>
 
@@ -107,110 +109,119 @@ async function copyAll() {
 </script>
 
 <style scoped>
-.post-card { font-family: 'Courier New', monospace; }
-
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 8px;
+.post-card {
+  font-family: var(--font-body);
+  color: var(--ink);
 }
-.post-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.platform-badge {
+
+.pc-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--s-3); flex-wrap: wrap;
+  margin-bottom: var(--s-5);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+}
+.pc-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+
+.plat-badge {
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.06em;
   padding: 4px 10px;
-  font-size: 0.78rem;
-  font-weight: bold;
+  border-radius: var(--r-full);
   border: 1px solid;
+  text-transform: none;
 }
-.platform-badge.linkedin  { color: #0077b5; border-color: #0077b5; background: #e8f0f8; }
-.platform-badge.instagram { color: #c13584; border-color: #c13584; background: #fce8f4; }
-.platform-badge.facebook  { color: #1877f2; border-color: #1877f2; background: #e8ecf8; }
-.platform-badge.twitter   { color: #111; border-color: #111; background: #f0f0f0; }
+.plat-badge.linkedin  { color: oklch(0.40 0.13 245); border-color: color-mix(in oklab, oklch(0.40 0.13 245), transparent 55%); background: color-mix(in oklab, oklch(0.40 0.13 245), var(--paper) 88%); }
+.plat-badge.instagram { color: oklch(0.50 0.18 350); border-color: color-mix(in oklab, oklch(0.50 0.18 350), transparent 55%); background: color-mix(in oklab, oklch(0.50 0.18 350), var(--paper) 88%); }
+.plat-badge.facebook  { color: oklch(0.42 0.15 260); border-color: color-mix(in oklab, oklch(0.42 0.15 260), transparent 55%); background: color-mix(in oklab, oklch(0.42 0.15 260), var(--paper) 88%); }
+.plat-badge.twitter   { color: var(--ink-hi); border-color: var(--hairline-2); background: var(--surface-2); }
 
-.type-badge { padding: 4px 10px; font-size: 0.78rem; background: #f0f0f0; border: 1px solid #ddd; }
-.day-badge  { font-size: 0.78rem; font-weight: bold; }
-.date-label { font-size: 0.78rem; color: #888; }
+.type-pill { text-transform: capitalize; }
+.pc-day  {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+.pc-date { font-size: var(--caption); color: var(--ink-lo); font-family: var(--font-mono); letter-spacing: 0.03em; }
 
-.post-status { font-size: 0.82rem; }
-.status.approved  { color: #090; font-weight: bold; }
-.status.revision  { color: #f90; font-weight: bold; }
-
-.post-section { margin-bottom: 18px; }
-.section-label {
-  font-size: 0.75rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #888;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.pc-section { margin-bottom: var(--s-5); }
+.pc-label {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: var(--s-2);
+  gap: var(--s-2);
 }
 .copy-btn {
-  padding: 2px 8px;
-  border: 1px solid #ddd;
-  background: #fff;
-  font-family: inherit;
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--ink-mid);
   cursor: pointer;
-  transition: background 0.1s;
+  border-radius: var(--r-full);
+  transition: all var(--dur-2) var(--ease-out);
 }
-.copy-btn:hover { background: #f0f0f0; }
-.copy-btn.copied { background: #e8f8e8; border-color: #090; color: #090; }
+.copy-btn:hover { border-color: var(--ink-hi); color: var(--ink-hi); }
+.copy-btn.copied {
+  background: color-mix(in oklab, var(--ok), var(--paper) 88%);
+  border-color: color-mix(in oklab, var(--ok), transparent 60%);
+  color: var(--ok);
+}
+.copy-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.post-copy   { line-height: 1.7; white-space: pre-wrap; font-size: 0.92rem; }
-.hashtag-line { color: #0077b5; font-size: 0.88rem; word-break: break-word; }
-.cta-text    { font-weight: bold; font-size: 0.92rem; }
-.visual-text { font-style: italic; color: #666; font-size: 0.88rem; }
-
-.revision-note {
-  background: #fff8e0;
-  border: 1px solid #f0c040;
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  margin-bottom: 18px;
-  line-height: 1.5;
+.pc-copy {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  color: var(--ink-hi);
+  max-width: 62ch;
+}
+.pc-hash {
+  font-family: var(--font-mono);
+  font-size: var(--small);
+  color: var(--brand);
+  word-break: break-word;
+  line-height: 1.7;
+}
+.pc-cta {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--ink-hi);
+}
+.pc-visual {
+  font-style: italic;
+  color: var(--ink-mid);
+  font-size: var(--small);
+  line-height: 1.6;
 }
 
-.post-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
+.pc-revnote {
+  background: var(--flame-wash);
+  border: 1px solid color-mix(in oklab, var(--flame), transparent 70%);
+  border-radius: var(--r-3);
+  padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-5);
 }
+.pc-revnote strong {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.45 0.15 75);
+  margin-bottom: var(--s-2);
+}
+.pc-revnote p { margin: 0; color: var(--ink); font-size: var(--small); line-height: 1.6; }
 
-.btn-primary {
-  padding: 10px 20px;
-  background: #111;
-  color: #fff;
-  border: 2px solid #111;
-  font-family: inherit;
-  font-size: 0.88rem;
-  cursor: pointer;
-  font-weight: bold;
-}
-.btn-primary:hover { background: #333; }
-.btn-outline {
-  padding: 10px 20px;
-  background: transparent;
-  color: #090;
-  border: 2px solid #090;
-  font-family: inherit;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
-.btn-ghost {
-  padding: 10px 20px;
-  background: transparent;
-  color: #111;
-  border: 2px solid #ddd;
-  font-family: inherit;
-  font-size: 0.88rem;
-  cursor: pointer;
+.pc-actions {
+  display: flex; flex-wrap: wrap; gap: var(--s-2);
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--hairline);
 }
 </style>
