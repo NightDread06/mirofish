@@ -1,0 +1,418 @@
+/* =============================================================================
+   ContentAgency.ai — design tokens
+   Audience: European local-business owners, ~35–50, pragmatic & skeptical.
+   Personality: intelligent, innovative, sleek.
+   Aesthetic: quiet editorial luxury. Apple-caliber precision, not tech-bro.
+   ========================================================================== */
+
+:where(.cagency) {
+  color-scheme: light;
+
+  /* ── Surfaces (light base, warm-tinted toward brand ink-violet) ────────── */
+  --paper:       oklch(0.992 0.002 270);
+  --surface-1:   oklch(0.975 0.004 270);
+  --surface-2:   oklch(0.955 0.006 270);
+  --surface-3:   oklch(0.920 0.007 270);
+  --hairline:    oklch(0.890 0.008 270);
+  --hairline-2:  oklch(0.820 0.010 270);
+
+  /* ── Dark surfaces (for hero / spotlight sections) ─────────────────────── */
+  --void:        oklch(0.105 0.018 268);
+  --void-2:      oklch(0.155 0.020 268);
+  --void-3:      oklch(0.220 0.022 268);
+  --moon:        oklch(0.955 0.006 270);
+  --moon-soft:   oklch(0.780 0.012 270);
+  --moon-mute:   oklch(0.620 0.012 270);
+
+  /* ── Ink on light ──────────────────────────────────────────────────────── */
+  --ink-hi:      oklch(0.165 0.022 270);
+  --ink:         oklch(0.220 0.020 270);
+  --ink-mid:     oklch(0.440 0.016 270);
+  --ink-lo:      oklch(0.600 0.012 270);
+  --ink-faint:   oklch(0.720 0.010 270);
+
+  /* ── Brand ink-violet and its tints ────────────────────────────────────── */
+  --brand:       oklch(0.260 0.080 268);
+  --brand-hi:    oklch(0.340 0.100 268);
+  --brand-wash:  oklch(0.965 0.012 268);
+
+  /* ── Warm amber — used sparingly for a single moment of heat ───────────── */
+  --flame:       oklch(0.720 0.165 58);
+  --flame-wash:  oklch(0.970 0.030 70);
+
+  /* ── Signal colors (semantic, perceptually uniform) ───────────────────── */
+  --ok:          oklch(0.620 0.150 150);
+  --warn:        oklch(0.700 0.160 75);
+  --err:         oklch(0.580 0.180 25);
+
+  /* ── Focus ring (always visible, 2px offset) ───────────────────────────── */
+  --focus:       oklch(0.620 0.165 268);
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Geist', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Fluid modular scale (1.25 ratio), clamp'd for marketing.
+     Use fixed --t-* tokens in product UI. */
+  --display-1:   clamp(3.25rem, 6.8vw + 0.5rem, 6.75rem);  /* hero */
+  --display-2:   clamp(2.50rem, 4.5vw + 0.5rem, 4.25rem);  /* section */
+  --display-3:   clamp(1.75rem, 2.4vw + 0.8rem, 2.75rem);
+  --title:       1.5rem;
+  --body-lg:     1.125rem;
+  --body:        1rem;
+  --small:       0.875rem;
+  --caption:     0.78rem;
+  --mono-cap:    0.72rem;
+
+  /* ── Spacing — 4pt scale with semantic names ───────────────────────────── */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  24px;
+  --s-6:  32px;
+  --s-7:  48px;
+  --s-8:  64px;
+  --s-9:  96px;
+  --s-10: 128px;
+
+  /* ── Radii — consistent but restrained (Apple-like, not pill-crazy) ────── */
+  --r-1:  4px;
+  --r-2:  8px;
+  --r-3:  12px;
+  --r-4:  18px;
+  --r-5:  28px;
+  --r-full: 999px;
+
+  /* ── Elevation (subtle, single layer, tinted toward brand) ─────────────── */
+  --shadow-sm:  0 1px 2px -1px oklch(0.15 0.02 270 / 0.08),
+                0 2px 6px -2px  oklch(0.15 0.02 270 / 0.05);
+  --shadow-md:  0 6px 14px -6px oklch(0.15 0.02 270 / 0.12),
+                0 12px 28px -10px oklch(0.15 0.02 270 / 0.08);
+  --shadow-lg:  0 24px 48px -20px oklch(0.15 0.02 270 / 0.18),
+                0 6px 16px  -6px  oklch(0.15 0.02 270 / 0.08);
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.30, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-soft:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 380ms;
+  --dur-4: 620ms;
+  --dur-5: 900ms;
+
+  /* ── Layout ────────────────────────────────────────────────────────────── */
+  --page:       1200px;
+  --measure:    68ch;
+  --content:    900px;
+}
+
+/* =============================================================================
+   Reset & base (scoped to .cagency so it never leaks into MiroFish)
+   ========================================================================== */
+.cagency {
+  font-family: var(--font-body);
+  font-feature-settings: 'ss01', 'cv01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--body);
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+.cagency *,
+.cagency *::before,
+.cagency *::after { box-sizing: border-box; }
+
+.cagency h1, .cagency h2, .cagency h3, .cagency h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.04;
+  color: var(--ink-hi);
+  font-optical-sizing: auto;
+}
+.cagency h1 { font-size: var(--display-1); letter-spacing: -0.035em; }
+.cagency h2 { font-size: var(--display-2); letter-spacing: -0.030em; }
+.cagency h3 { font-size: var(--display-3); letter-spacing: -0.022em; line-height: 1.10; }
+.cagency h4 { font-size: var(--title);     letter-spacing: -0.015em; line-height: 1.20; }
+
+.cagency p { max-width: var(--measure); line-height: 1.6; }
+.cagency a { color: inherit; text-decoration-color: color-mix(in oklab, currentColor, transparent 70%); text-underline-offset: 3px; }
+
+/* =============================================================================
+   Navigation — shared across all agency views
+   ========================================================================== */
+.ca-nav {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-4) clamp(var(--s-5), 4vw, var(--s-7));
+  background: color-mix(in oklab, var(--paper), transparent 18%);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid color-mix(in oklab, var(--hairline), transparent 40%);
+}
+.ca-nav.on-dark {
+  background: color-mix(in oklab, var(--void), transparent 24%);
+  color: var(--moon);
+  border-bottom-color: color-mix(in oklab, var(--moon), transparent 88%);
+}
+.ca-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.020em;
+  text-decoration: none;
+  display: inline-flex; align-items: baseline; gap: 2px;
+}
+.ca-brand .dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--flame); transform: translateY(-1px);
+  margin-right: 8px;
+}
+.ca-nav-links {
+  display: flex; align-items: center; gap: var(--s-5);
+  font-size: var(--small);
+}
+.ca-nav-links a {
+  color: var(--ink-mid);
+  text-decoration: none;
+  padding: 6px 2px;
+  transition: color var(--dur-2) var(--ease-out);
+}
+.ca-nav-links a:hover { color: var(--ink-hi); }
+.ca-nav-links a.router-link-active { color: var(--ink-hi); }
+
+/* =============================================================================
+   Buttons — primary, secondary, ghost. No pill shapes, no gradient fills.
+   ========================================================================== */
+.ca-btn {
+  --btn-bg: var(--ink-hi);
+  --btn-fg: var(--paper);
+  --btn-bd: var(--ink-hi);
+  appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  padding: 14px 22px;
+  font-family: var(--font-body); font-weight: 500; font-size: 0.9375rem;
+  letter-spacing: -0.005em;
+  background: var(--btn-bg); color: var(--btn-fg);
+  border: 1px solid var(--btn-bd);
+  border-radius: var(--r-full);
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out),
+              background var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
+  will-change: transform;
+}
+.ca-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--btn-bg), var(--paper) 10%);
+  box-shadow: var(--shadow-md);
+}
+.ca-btn:active:not(:disabled) { transform: translateY(0); }
+.ca-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ca-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.ca-btn.secondary {
+  --btn-bg: transparent;
+  --btn-fg: var(--ink-hi);
+  --btn-bd: color-mix(in oklab, var(--ink-hi), transparent 78%);
+}
+.ca-btn.secondary:hover:not(:disabled) {
+  --btn-bg: color-mix(in oklab, var(--ink-hi), transparent 94%);
+}
+
+.ca-btn.ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--ink-hi);
+  --btn-bd: transparent;
+  padding: 10px 14px;
+}
+.ca-btn.ghost:hover:not(:disabled) {
+  --btn-bg: color-mix(in oklab, var(--ink-hi), transparent 92%);
+}
+
+.ca-btn.on-dark              { --btn-bg: var(--moon); --btn-fg: var(--void); --btn-bd: var(--moon); }
+.ca-btn.on-dark.secondary    { --btn-bg: transparent; --btn-fg: var(--moon); --btn-bd: color-mix(in oklab, var(--moon), transparent 65%); }
+.ca-btn.on-dark.secondary:hover:not(:disabled) { --btn-bg: color-mix(in oklab, var(--moon), transparent 88%); }
+
+.ca-btn.sm { padding: 8px 14px; font-size: var(--caption); }
+.ca-btn.lg { padding: 18px 30px; font-size: 1rem; }
+
+/* =============================================================================
+   Cards, inputs, pills
+   ========================================================================== */
+.ca-card {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-4);
+  padding: var(--s-6);
+  transition: border-color var(--dur-2) var(--ease-out),
+              transform    var(--dur-3) var(--ease-out),
+              box-shadow   var(--dur-3) var(--ease-out);
+}
+.ca-card.hoverable:hover {
+  border-color: var(--hairline-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.ca-field {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: var(--s-5);
+}
+.ca-field label {
+  font-size: var(--caption);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  font-weight: 500;
+}
+.ca-field input,
+.ca-field select,
+.ca-field textarea {
+  width: 100%;
+  font: inherit; font-size: 0.95rem;
+  color: var(--ink-hi);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-2);
+  padding: 12px 14px;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background   var(--dur-2) var(--ease-out),
+              box-shadow   var(--dur-2) var(--ease-out);
+}
+.ca-field input:hover,
+.ca-field select:hover,
+.ca-field textarea:hover { border-color: var(--hairline-2); }
+.ca-field input:focus,
+.ca-field select:focus,
+.ca-field textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: var(--paper);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand), transparent 88%);
+}
+.ca-field .hint { font-size: var(--caption); color: var(--ink-lo); }
+.ca-field .err  { font-size: var(--caption); color: var(--err); }
+
+.ca-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+  border: 1px solid var(--hairline);
+}
+.ca-pill.ok    { color: var(--ok);    background: color-mix(in oklab, var(--ok),   var(--paper) 88%); border-color: color-mix(in oklab, var(--ok),   transparent 70%); }
+.ca-pill.warn  { color: oklch(0.45 0.15 75); background: var(--flame-wash); border-color: color-mix(in oklab, var(--flame), transparent 70%); }
+.ca-pill.err   { color: var(--err);   background: color-mix(in oklab, var(--err),  var(--paper) 90%); border-color: color-mix(in oklab, var(--err),  transparent 70%); }
+.ca-pill.brand { color: var(--brand); background: var(--brand-wash); border-color: color-mix(in oklab, var(--brand), transparent 78%); }
+.ca-pill.on-dark { background: color-mix(in oklab, var(--moon), transparent 90%); color: var(--moon); border-color: color-mix(in oklab, var(--moon), transparent 78%); }
+
+/* =============================================================================
+   Dark surface (hero and spotlight sections)
+   ========================================================================== */
+.ca-dark {
+  background: var(--void);
+  color: var(--moon);
+}
+.ca-dark h1, .ca-dark h2, .ca-dark h3, .ca-dark h4 { color: var(--moon); }
+.ca-dark p { color: color-mix(in oklab, var(--moon), transparent 15%); }
+
+/* =============================================================================
+   Kicker — small uppercase mono label that sits above display type
+   ========================================================================== */
+.ca-kicker {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+}
+.ca-kicker::before {
+  content: '';
+  width: 18px; height: 1px;
+  background: currentColor;
+  opacity: 0.45;
+}
+.ca-dark .ca-kicker { color: var(--moon-soft); }
+
+/* =============================================================================
+   Reveal-on-scroll — class added by a single IntersectionObserver.
+   Only transform + opacity. Respects prefers-reduced-motion.
+   ========================================================================== */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity   var(--dur-5) var(--ease-out),
+    transform var(--dur-5) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: transform, opacity;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .cagency *, .cagency *::before, .cagency *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* =============================================================================
+   Subtle section divider — a single hair, not a thick border
+   ========================================================================== */
+.ca-hair {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hairline) 20%,
+    var(--hairline) 80%,
+    transparent
+  );
+  margin: var(--s-9) 0;
+}
+
+/* =============================================================================
+   Skip link for a11y
+   ========================================================================== */
+.ca-skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ink-hi); color: var(--paper);
+  padding: 10px 16px; border-radius: var(--r-2);
+  z-index: 9999;
+}
+.ca-skip:focus { left: 16px; top: 16px; }
+
+/* =============================================================================
+   Scroll-driven progress bar (used by landing page)
+   ========================================================================== */
+.ca-progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+  background: color-mix(in oklab, var(--flame), transparent 60%);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--scroll, 0));
+  z-index: 100;
+  pointer-events: none;
+}
