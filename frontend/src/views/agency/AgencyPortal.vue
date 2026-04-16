@@ -1,124 +1,212 @@
 <template>
-  <div class="agency-portal">
-    <nav class="agency-nav">
-      <router-link to="/agency" class="nav-brand">ContentAgency.ai</router-link>
-      <div class="nav-links">
+  <div ref="root" class="cagency portal">
+    <a href="#main" class="ca-skip">Skip to content</a>
+
+    <nav class="ca-nav" aria-label="Portal">
+      <router-link to="/agency" class="ca-brand">
+        <span class="dot" aria-hidden="true"></span>ContentAgency
+      </router-link>
+      <div class="ca-nav-links">
         <router-link v-if="auth.state.isAdmin" to="/agency/admin">Admin</router-link>
-        <button class="btn-ghost-sm" @click="handleLogout">Log Out</button>
+        <button class="ca-btn ghost sm" @click="handleLogout">Log out</button>
       </div>
     </nav>
 
-    <div class="portal-inner">
-      <!-- Loading -->
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div>
+    <main id="main" class="portal-inner">
+      <div v-if="loading" class="state" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
         <p>Loading your portal…</p>
       </div>
 
-      <!-- No profile yet -->
-      <div v-else-if="!client" class="empty-state">
-        <h2>Welcome! Let's set up your profile.</h2>
-        <p>Complete a quick 3-minute form and we'll generate your first 30-day content calendar.</p>
-        <router-link to="/agency/onboarding" class="btn-primary">Complete Onboarding →</router-link>
-      </div>
+      <section v-else-if="!client" class="empty reveal">
+        <span class="ca-kicker">Welcome</span>
+        <h1>Let's set up your studio.</h1>
+        <p class="lede">
+          A three-minute conversation about your business, then we generate
+          your first 30-day calendar.
+        </p>
+        <router-link to="/agency/onboarding" class="ca-btn lg">
+          Start onboarding →
+        </router-link>
+      </section>
 
-      <!-- Portal content -->
       <template v-else>
-        <div class="portal-header">
-          <div>
+        <header class="portal-head reveal">
+          <div class="head-text">
+            <span class="ca-kicker">Studio</span>
             <h1>{{ client.business_name }}</h1>
-            <span class="status-badge" :class="client.status">{{ client.status }}</span>
-            <span class="plan-badge" :class="client.plan">{{ client.plan }}</span>
+            <div class="head-pills">
+              <span class="ca-pill" :class="statusPill(client.status)">
+                {{ client.status }}
+              </span>
+              <span class="ca-pill" :class="planPill(client.plan)">
+                {{ client.plan }}
+              </span>
+            </div>
           </div>
-          <button class="btn-primary" @click="showGenerateModal = true">
-            + Generate New Package
+          <button class="ca-btn" @click="openGenerate">
+            Generate new package
           </button>
-        </div>
+        </header>
 
-        <!-- Content packages -->
-        <section class="packages-section">
-          <h2>Content Packages</h2>
-          <div v-if="packages.length === 0" class="empty-packages">
-            <p>No content packages yet. Generate your first 30-day calendar above.</p>
+        <hr class="ca-hair" />
+
+        <section class="packages reveal" aria-labelledby="pkgs-h">
+          <div class="section-head">
+            <h2 id="pkgs-h">Content packages</h2>
+            <span class="count-mono">{{ packages.length }} total</span>
           </div>
-          <div v-else class="packages-grid">
-            <div v-for="pkg in packages" :key="pkg.id" class="package-card"
-                 :class="pkg.status" @click="openPackage(pkg)">
-              <div class="pkg-header">
+
+          <div v-if="packages.length === 0" class="empty-soft">
+            <p>No packages yet. Generate your first 30-day calendar above.</p>
+          </div>
+
+          <div v-else class="pkg-grid">
+            <article
+              v-for="pkg in packages"
+              :key="pkg.id"
+              class="pkg-card ca-card"
+              :class="[pkg.status, { hoverable: pkg.status === 'completed' }]"
+              :aria-busy="pkg.status === 'generating' || pkg.status === 'pending'"
+              tabindex="0"
+              @click="openPackage(pkg)"
+              @keydown.enter="openPackage(pkg)"
+            >
+              <div class="pkg-top">
                 <span class="pkg-month">{{ pkg.month_label }}</span>
-                <span class="pkg-status-badge" :class="pkg.status">{{ pkg.status }}</span>
+                <span class="ca-pill" :class="statusPill(pkg.status)">
+                  {{ pkg.status }}
+                </span>
               </div>
+
               <div class="pkg-platforms">
-                <span v-for="p in (pkg.platforms || [])" :key="p" class="platform-tag">{{ p }}</span>
+                <span
+                  v-for="p in pkg.platforms || []"
+                  :key="p"
+                  class="plat-tag"
+                >{{ p }}</span>
               </div>
+
               <div class="pkg-meta">
                 <span>{{ pkg.post_count }} posts</span>
-                <span>{{ pkg.model_used?.includes('sonnet') ? 'Premium' : 'Standard' }}</span>
+                <span class="mono">
+                  {{ pkg.model_used?.includes('sonnet') ? 'Premium' : 'Standard' }}
+                </span>
               </div>
-              <!-- Progress bar for generating packages -->
-              <div v-if="pkg.status === 'generating' || pkg.status === 'pending'" class="progress-bar">
-                <div class="progress-fill" :style="{ width: (pkg.progress || 5) + '%' }"></div>
+
+              <div
+                v-if="pkg.status === 'generating' || pkg.status === 'pending'"
+                class="prog"
+                role="progressbar"
+                :aria-valuenow="pkg.progress || 5"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div class="prog-fill" :style="{ width: (pkg.progress || 5) + '%' }"></div>
               </div>
-              <p v-if="pkg.status === 'generating' || pkg.status === 'pending'"
-                 class="progress-msg">{{ pkg.progress_message || 'Generating…' }}</p>
-            </div>
+              <p
+                v-if="pkg.status === 'generating' || pkg.status === 'pending'"
+                class="prog-msg"
+              >{{ pkg.progress_message || 'Generating…' }}</p>
+            </article>
           </div>
         </section>
 
-        <!-- Quick tips -->
-        <section class="tips-section">
-          <h2>Getting the most from your content</h2>
-          <div class="tips-grid">
-            <div class="tip">
-              <strong>Best posting times:</strong> LinkedIn Tue–Thu 8–10am · Instagram Wed–Fri 11am–1pm · Facebook Tue–Thu 9am
-            </div>
-            <div class="tip">
-              <strong>Hashtag tip:</strong> Mix 3 niche tags + 3 location tags + 3 broad community tags per post.
-            </div>
-            <div class="tip">
-              <strong>Visual tip:</strong> Use the visual description as a brief for your photographer or to search Unsplash.
-            </div>
+        <hr class="ca-hair" />
+
+        <section class="tips reveal" aria-labelledby="tips-h">
+          <div class="section-head">
+            <h2 id="tips-h">Getting the most from your content</h2>
+          </div>
+          <div class="tip-grid">
+            <article class="tip ca-card">
+              <span class="ca-kicker">Timing</span>
+              <p>
+                LinkedIn Tue–Thu 8–10am. Instagram Wed–Fri 11am–1pm.
+                Facebook Tue–Thu 9am.
+              </p>
+            </article>
+            <article class="tip ca-card">
+              <span class="ca-kicker">Hashtags</span>
+              <p>
+                Mix 3 niche tags, 3 location tags, 3 broad community tags
+                per post.
+              </p>
+            </article>
+            <article class="tip ca-card">
+              <span class="ca-kicker">Visuals</span>
+              <p>
+                Use the visual description as a brief for your photographer
+                or an Unsplash search.
+              </p>
+            </article>
           </div>
         </section>
       </template>
-    </div>
+    </main>
 
-    <!-- Generate modal -->
-    <div v-if="showGenerateModal" class="modal-overlay" @click.self="showGenerateModal = false">
-      <div class="modal">
-        <button class="modal-close" @click="showGenerateModal = false">×</button>
-        <h3>Generate 30-Day Content Package</h3>
-        <div class="form-group">
-          <label>Start date</label>
-          <input v-model="genForm.start_date" type="date" />
-        </div>
-        <div class="form-group">
-          <label>Platforms</label>
-          <div class="platform-checkboxes">
-            <label v-for="p in allPlatforms" :key="p" class="checkbox-label-inline">
-              <input type="checkbox" :value="p" v-model="genForm.platforms" />
-              {{ p }}
-            </label>
+    <Transition name="fade">
+      <div
+        v-if="showGenerateModal"
+        class="overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gen-title"
+        @click.self="closeGenerate"
+        @keydown.esc="closeGenerate"
+      >
+        <div class="modal ca-card">
+          <button class="modal-close" @click="closeGenerate" aria-label="Close">×</button>
+          <span class="ca-kicker">Generate</span>
+          <h3 id="gen-title">30-day content package</h3>
+
+          <div class="ca-field">
+            <label for="start-date">Start date</label>
+            <input id="start-date" v-model="genForm.start_date" type="date" />
           </div>
+
+          <div class="ca-field">
+            <label>Platforms</label>
+            <div class="plat-check">
+              <label
+                v-for="p in allPlatforms"
+                :key="p"
+                class="plat-check-item"
+              >
+                <input type="checkbox" :value="p" v-model="genForm.platforms" />
+                <span>{{ p }}</span>
+              </label>
+            </div>
+          </div>
+
+          <p v-if="genError" class="form-err">{{ genError }}</p>
+
+          <button
+            class="ca-btn"
+            @click="generateContent"
+            :disabled="generating || genForm.platforms.length === 0"
+          >
+            {{ generating ? 'Submitting…' : 'Generate package →' }}
+          </button>
         </div>
-        <p v-if="genError" class="form-error">{{ genError }}</p>
-        <button class="btn-primary" @click="generateContent" :disabled="generating">
-          {{ generating ? 'Submitting…' : 'Generate Package →' }}
-        </button>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAgencyAuth } from '../../store/agencyAuth.js'
-import { getMyProfile, getClientPackages, generateContent as apiGenerateContent } from '../../api/agency.js'
+import {
+  getMyProfile, getClientPackages, generateContent as apiGenerateContent,
+} from '../../api/agency.js'
+import { useReveal } from '../../composables/useReveal.js'
 
 const router = useRouter()
 const auth   = useAgencyAuth()
 
+const root    = ref(null)
 const loading = ref(true)
 const client  = ref(null)
 const packages = ref([])
@@ -135,6 +223,8 @@ const genForm = ref({
 
 let pollInterval = null
 
+useReveal(root)
+
 async function loadPortal() {
   try {
     const res = await getMyProfile()
@@ -144,6 +234,7 @@ async function loadPortal() {
     client.value = null
   } finally {
     loading.value = false
+    await nextTick()
   }
 }
 
@@ -171,8 +262,18 @@ async function pollGeneratingPackages() {
   }
 }
 
+function openGenerate() {
+  genError.value = ''
+  showGenerateModal.value = true
+}
+
+function closeGenerate() {
+  if (generating.value) return
+  showGenerateModal.value = false
+}
+
 async function generateContent() {
-  genError.value  = ''
+  genError.value   = ''
   generating.value = true
   try {
     await apiGenerateContent({
@@ -200,9 +301,24 @@ async function handleLogout() {
   router.push('/agency')
 }
 
+function statusPill(status) {
+  return {
+    active:     'ok',
+    completed:  'ok',
+    onboarding: 'warn',
+    pending:    'warn',
+    generating: 'warn',
+    paused:     'err',
+    churned:    'err',
+    failed:     'err',
+  }[status] || ''
+}
+function planPill(plan) {
+  return plan === 'retainer' ? 'brand' : ''
+}
+
 onMounted(async () => {
   await loadPortal()
-  // Poll in-flight packages every 3 seconds
   pollInterval = setInterval(pollGeneratingPackages, 3000)
 })
 
@@ -212,69 +328,195 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.agency-portal { font-family: 'Courier New', monospace; background: #f9f9f9; min-height: 100vh; }
-.agency-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 2px solid #111; background: #fff; position: sticky; top: 0; z-index: 100; }
-.nav-brand { font-size: 1.2rem; font-weight: bold; text-decoration: none; color: #111; }
-.nav-links { display: flex; align-items: center; gap: 16px; }
-.nav-links a { color: #111; text-decoration: none; font-size: 0.9rem; }
+.portal-inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-5) var(--s-10);
+}
 
-.portal-inner { max-width: 1000px; margin: 0 auto; padding: 48px 24px; }
-
-.loading-state { text-align: center; padding: 80px 0; }
-.spinner { width: 40px; height: 40px; border: 3px solid #eee; border-top-color: #111; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+.state {
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-4);
+  padding: var(--s-10) 0;
+  color: var(--ink-mid);
+}
+.spinner {
+  width: 26px; height: 26px;
+  border: 2px solid color-mix(in oklab, var(--ink-hi), transparent 88%);
+  border-top-color: var(--ink-hi);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.empty-state { text-align: center; padding: 80px 0; border: 2px dashed #ddd; background: #fff; }
-.empty-state h2 { margin-bottom: 12px; }
-.empty-state p { color: #555; margin-bottom: 28px; }
+.empty {
+  text-align: center;
+  padding: var(--s-10) var(--s-4);
+  max-width: 620px;
+  margin: 0 auto;
+}
+.empty h1 { font-size: var(--display-2); margin: var(--s-3) 0 var(--s-4); }
+.empty .lede { color: var(--ink-mid); font-size: var(--body-lg); margin: 0 auto var(--s-6); }
 
-.portal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
-.portal-header h1 { font-size: 2rem; margin-bottom: 8px; }
-.status-badge, .plan-badge { display: inline-block; padding: 3px 10px; font-size: 0.78rem; border: 1px solid; margin-right: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-.status-badge.active { border-color: #090; color: #090; }
-.status-badge.onboarding { border-color: #f90; color: #f90; }
-.plan-badge.pilot { border-color: #999; color: #999; }
-.plan-badge.retainer { border-color: #09f; color: #09f; }
+.portal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
+}
+.portal-head h1 { font-size: var(--display-3); margin: var(--s-2) 0; }
+.head-pills { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 
-.packages-section { margin-bottom: 48px; }
-.packages-section h2 { font-size: 1.4rem; margin-bottom: 24px; }
-.empty-packages { padding: 32px; border: 2px dashed #ddd; text-align: center; color: #888; background: #fff; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: var(--s-6);
+  flex-wrap: wrap; gap: var(--s-3);
+}
+.section-head h2 { font-size: var(--display-3); }
+.count-mono {
+  font-family: var(--font-mono);
+  font-size: var(--caption);
+  color: var(--ink-lo);
+  letter-spacing: 0.04em;
+}
 
-.packages-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-.package-card { background: #fff; border: 2px solid #ddd; padding: 24px; cursor: pointer; transition: border-color 0.15s; }
-.package-card.completed { cursor: pointer; }
-.package-card.completed:hover { border-color: #111; }
-.pkg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.pkg-month { font-weight: bold; font-size: 1rem; }
-.pkg-status-badge { padding: 2px 8px; font-size: 0.75rem; border: 1px solid; }
-.pkg-status-badge.completed { border-color: #090; color: #090; }
-.pkg-status-badge.pending, .pkg-status-badge.generating { border-color: #f90; color: #f90; }
-.pkg-status-badge.failed { border-color: #c00; color: #c00; }
-.pkg-platforms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.platform-tag { background: #f0f0f0; padding: 2px 8px; font-size: 0.75rem; }
-.pkg-meta { display: flex; justify-content: space-between; font-size: 0.82rem; color: #888; }
-.progress-bar { height: 4px; background: #eee; margin-top: 12px; }
-.progress-fill { height: 100%; background: #111; transition: width 0.5s; }
-.progress-msg { font-size: 0.78rem; color: #888; margin-top: 8px; }
+.empty-soft {
+  padding: var(--s-7);
+  border: 1px dashed var(--hairline-2);
+  border-radius: var(--r-3);
+  text-align: center;
+  color: var(--ink-lo);
+  background: var(--surface-1);
+}
 
-.tips-section h2 { font-size: 1.4rem; margin-bottom: 20px; }
-.tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.tip { background: #fff; border: 1px solid #eee; padding: 20px; font-size: 0.88rem; line-height: 1.6; }
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--s-4);
+}
+.pkg-card {
+  cursor: default;
+  padding: var(--s-5);
+  display: flex; flex-direction: column; gap: var(--s-3);
+}
+.pkg-card.completed { cursor: pointer; }
+.pkg-card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.pkg-top { display: flex; justify-content: space-between; align-items: center; }
+.pkg-month {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--ink-hi);
+  letter-spacing: -0.02em;
+}
+.pkg-platforms { display: flex; flex-wrap: wrap; gap: 6px; }
+.plat-tag {
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--ink-mid);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+.pkg-meta {
+  display: flex; justify-content: space-between;
+  font-size: var(--caption);
+  color: var(--ink-lo);
+}
+.pkg-meta .mono { font-family: var(--font-mono); letter-spacing: 0.04em; }
 
-.btn-primary { display: inline-block; background: #111; color: #fff; padding: 12px 24px; font-family: inherit; font-size: 0.9rem; font-weight: bold; border: 2px solid #111; cursor: pointer; text-decoration: none; }
-.btn-primary:hover:not(:disabled) { background: #333; }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-ghost-sm { background: transparent; border: 1px solid #ddd; padding: 8px 16px; font-family: inherit; font-size: 0.85rem; cursor: pointer; }
-.btn-ghost-sm:hover { background: #f0f0f0; }
+.prog {
+  height: 3px;
+  background: color-mix(in oklab, var(--ink-hi), transparent 92%);
+  border-radius: var(--r-full);
+  overflow: hidden;
+  margin-top: var(--s-2);
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--flame));
+  transition: width var(--dur-4) var(--ease-out);
+}
+.prog-msg {
+  font-size: var(--caption);
+  color: var(--ink-lo);
+  margin: 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border: 2px solid #111; padding: 40px; width: 100%; max-width: 460px; position: relative; }
-.modal h3 { font-size: 1.4rem; margin-bottom: 24px; }
-.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; }
-.form-group input { width: 100%; padding: 10px; border: 2px solid #ccc; font-family: inherit; font-size: 0.95rem; box-sizing: border-box; }
-.platform-checkboxes { display: flex; flex-wrap: wrap; gap: 12px; }
-.checkbox-label-inline { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
-.form-error { color: #c00; font-size: 0.85rem; margin-bottom: 12px; }
+.tip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s-4);
+}
+.tip { padding: var(--s-5); }
+.tip p { margin: var(--s-3) 0 0; color: var(--ink-mid); line-height: 1.6; }
+
+.overlay {
+  position: fixed; inset: 0;
+  background: color-mix(in oklab, var(--void), transparent 45%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--s-5);
+  z-index: 1000;
+}
+.modal {
+  position: relative;
+  width: 100%; max-width: 480px;
+  padding: var(--s-7);
+  background: var(--paper);
+  box-shadow: var(--shadow-lg);
+}
+.modal h3 { margin: var(--s-2) 0 var(--s-5); font-size: 1.5rem; }
+.modal-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px;
+  background: transparent; border: none;
+  color: var(--ink-mid); cursor: pointer;
+  font-size: 1.6rem; line-height: 1;
+  border-radius: var(--r-full);
+  transition: background var(--dur-2) var(--ease-out);
+}
+.modal-close:hover { background: var(--surface-2); }
+.modal-close:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.plat-check { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.plat-check-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-full);
+  background: var(--surface-1);
+  cursor: pointer;
+  font-size: var(--small);
+  text-transform: capitalize;
+  transition: border-color var(--dur-2) var(--ease-out),
+              background var(--dur-2) var(--ease-out);
+}
+.plat-check-item:hover { border-color: var(--hairline-2); }
+.plat-check-item input { accent-color: var(--brand); }
+.form-err {
+  color: var(--err);
+  font-size: var(--caption);
+  margin: 0 0 var(--s-3);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity var(--dur-3) var(--ease-out);
+}
+.fade-enter-active .modal, .fade-leave-active .modal {
+  transition: transform var(--dur-3) var(--ease-out),
+              opacity   var(--dur-3) var(--ease-out);
+}
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-from .modal, .fade-leave-to .modal {
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+}
 </style>
