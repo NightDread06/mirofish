@@ -16,11 +16,21 @@ export function useReveal(rootRef, opts = {}) {
   const rootMargin = opts.rootMargin ?? '0px 0px -10% 0px'
   const threshold  = opts.threshold  ?? 0.08
 
-  let observer = null
+  let io  = null
+  let mo  = null
+  const seen = new WeakSet()
 
   const reduceMotion =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+  function observeNew(root) {
+    root.querySelectorAll(selector).forEach(el => {
+      if (seen.has(el)) return
+      seen.add(el)
+      io.observe(el)
+    })
+  }
 
   onMounted(() => {
     if (!rootRef.value) return
@@ -30,24 +40,32 @@ export function useReveal(rootRef, opts = {}) {
       return
     }
 
-    observer = new IntersectionObserver(
+    io = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             entry.target.classList.add('in')
-            observer.unobserve(entry.target)
+            io.unobserve(entry.target)
           }
         }
       },
       { rootMargin, threshold }
     )
 
-    rootRef.value.querySelectorAll(selector).forEach(el => observer.observe(el))
+    observeNew(rootRef.value)
+
+    // Pick up .reveal elements added later (e.g. after async data loads).
+    if (typeof MutationObserver !== 'undefined') {
+      mo = new MutationObserver(() => {
+        if (rootRef.value) observeNew(rootRef.value)
+      })
+      mo.observe(rootRef.value, { childList: true, subtree: true })
+    }
   })
 
   onUnmounted(() => {
-    observer?.disconnect()
-    observer = null
+    io?.disconnect(); io = null
+    mo?.disconnect(); mo = null
   })
 }
 

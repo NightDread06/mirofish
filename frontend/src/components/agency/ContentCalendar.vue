@@ -1,11 +1,10 @@
 <template>
   <div class="cal">
-    <div class="cal-grid" role="grid" aria-label="30-day content calendar">
-      <div
+    <ul class="cal-grid" aria-label="30-day content calendar">
+      <li
         v-for="day in 30"
         :key="day"
         class="day"
-        role="row"
       >
         <div class="day-head">
           <span class="day-num">{{ day }}</span>
@@ -29,8 +28,8 @@
             <span v-if="post.is_approved" class="chip-mark ok" aria-hidden="true">✓</span>
           </button>
         </div>
-      </div>
-    </div>
+      </li>
+    </ul>
 
     <div class="legend" aria-hidden="true">
       <span class="ca-kicker">Legend</span>
@@ -75,6 +74,9 @@ function platformIcon(platform) {
 .cal { width: 100%; }
 
 .cal-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1px;
