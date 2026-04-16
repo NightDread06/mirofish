@@ -58,3 +58,6 @@ backend/uploads/
 
 # Docker 数据
 data/
+
+# External skill references (not committed)
+.agents/skills-external/

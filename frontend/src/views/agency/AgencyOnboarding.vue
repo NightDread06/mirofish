@@ -1,191 +1,208 @@
 <template>
-  <div class="agency-onboarding">
-    <nav class="agency-nav">
-      <router-link to="/agency" class="nav-brand">ContentAgency.ai</router-link>
-      <div class="step-indicator">
-        <span v-for="n in 3" :key="n"
-              :class="['step-dot', { active: currentStep === n, done: currentStep > n }]">
-          {{ n }}
-        </span>
+  <div ref="root" class="cagency agency-onboarding">
+    <a href="#main" class="ca-skip">Skip to content</a>
+
+    <nav class="ca-nav" aria-label="Primary">
+      <router-link to="/agency" class="ca-brand">
+        <span class="dot" aria-hidden="true"></span>ContentAgency<span class="muted">.ai</span>
+      </router-link>
+      <div class="step-indicator" aria-label="Progress">
+        <div v-for="n in 3" :key="n"
+             class="step-dot"
+             :class="{ active: currentStep === n, done: currentStep > n }"
+             :aria-current="currentStep === n ? 'step' : null">
+          <span class="step-dot-num">{{ String(n).padStart(2, '0') }}</span>
+          <span class="step-dot-label">{{ stepLabels[n - 1] }}</span>
+        </div>
       </div>
     </nav>
 
-    <!-- Completed state — show auth prompt -->
-    <div v-if="submitted" class="onboarding-done">
-      <div class="done-icon">✓</div>
-      <h2>Your profile is ready!</h2>
-      <p>Create a free account to access your client portal and trigger content generation.</p>
-      <form @submit.prevent="handleAuth" class="auth-form">
-        <div class="form-group">
-          <label>Email address</label>
-          <input v-model="authEmail" type="email" required autocomplete="email" placeholder="you@example.com" />
-        </div>
-        <div class="form-group">
-          <label>Password <span class="hint">(12+ characters)</span></label>
-          <input v-model="authPassword" type="password" required minlength="12"
-                 autocomplete="new-password" placeholder="Choose a strong password" />
-        </div>
-        <p v-if="authError" class="form-error">{{ authError }}</p>
-        <button type="submit" class="btn-primary" :disabled="authLoading">
-          {{ authLoading ? 'Creating account…' : 'Create Account & Go to Portal →' }}
-        </button>
-        <p class="login-link">
-          Already have an account?
-          <a href="#" @click.prevent="showLogin = true">Log in instead</a>
-        </p>
-      </form>
+    <main id="main" class="wrap">
+      <!-- Completed state — show auth prompt -->
+      <section v-if="submitted" class="done reveal in">
+        <span class="ca-kicker">Step 4 of 3</span>
+        <h1>Your profile is ready.</h1>
+        <p>Create your portal login so you can read the calendar the moment it arrives.</p>
 
-      <!-- Login modal -->
-      <div v-if="showLogin" class="modal-overlay" @click.self="showLogin = false">
-        <div class="modal">
-          <button class="modal-close" @click="showLogin = false">×</button>
-          <h3>Log In</h3>
-          <form @submit.prevent="handleLogin">
-            <div class="form-group">
-              <label>Email</label>
-              <input v-model="loginEmail" type="email" required autocomplete="email" />
-            </div>
-            <div class="form-group">
-              <label>Password</label>
-              <input v-model="loginPassword" type="password" required autocomplete="current-password" />
-            </div>
-            <p v-if="loginError" class="form-error">{{ loginError }}</p>
-            <button type="submit" class="btn-primary" :disabled="loginLoading">
-              {{ loginLoading ? 'Logging in…' : 'Log In' }}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Onboarding form steps -->
-    <div v-else class="onboarding-form">
-      <div class="form-card">
-
-        <!-- Step 1: Business info -->
-        <div v-if="currentStep === 1">
-          <h2>Tell us about your business</h2>
-          <p class="step-desc">This shapes every post we create for you.</p>
-          <div class="form-group">
-            <label>Business name *</label>
-            <input v-model="form.business_name" type="text" required maxlength="255"
-                   placeholder="e.g. City Fit Gym" />
+        <form @submit.prevent="handleAuth" class="auth-form">
+          <div class="ca-field">
+            <label for="onb-email">Email</label>
+            <input id="onb-email" v-model="authEmail" type="email" required
+                   autocomplete="email" placeholder="you@yourbusiness.com" />
           </div>
-          <div class="form-group">
-            <label>Business type *</label>
-            <select v-model="form.business_type" required>
-              <option value="">Select type…</option>
-              <option value="gym">Gym / Personal Training</option>
-              <option value="salon">Hair Salon / Beauty</option>
-              <option value="restaurant">Restaurant / Café</option>
-              <option value="clinic">Clinic / Med Spa</option>
-              <option value="real_estate">Real Estate Agent</option>
-              <option value="other">Other local business</option>
-            </select>
+          <div class="ca-field">
+            <label for="onb-pass">Password</label>
+            <input id="onb-pass" v-model="authPassword" type="password" required minlength="12"
+                   autocomplete="new-password" placeholder="Twelve or more characters" />
+            <span class="hint">Twelve characters minimum — mix letters, numbers, and punctuation.</span>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>City *</label>
-              <input v-model="form.city" type="text" required maxlength="100"
-                     placeholder="e.g. Dublin" />
-            </div>
-            <div class="form-group">
-              <label>Country</label>
-              <input v-model="form.country" type="text" maxlength="2"
-                     placeholder="IE" />
+          <p v-if="authError" class="ca-field"><span class="err">{{ authError }}</span></p>
+          <button type="submit" class="ca-btn lg" :disabled="authLoading" style="width:100%">
+            {{ authLoading ? 'Creating account…' : 'Create account and open portal →' }}
+          </button>
+          <p class="login-link">
+            Already have an account?
+            <a href="#" @click.prevent="showLogin = true">Sign in instead</a>
+          </p>
+        </form>
+
+        <Transition name="modal">
+          <div v-if="showLogin" class="ca-modal-overlay" @click.self="showLogin = false"
+               role="dialog" aria-modal="true">
+            <div class="ca-modal">
+              <button class="ca-modal-close" @click="showLogin = false" aria-label="Close">×</button>
+              <span class="ca-kicker">Welcome back</span>
+              <h3>Sign in</h3>
+              <form @submit.prevent="handleLogin" class="ca-modal-form">
+                <div class="ca-field">
+                  <label>Email</label>
+                  <input v-model="loginEmail" type="email" required autocomplete="email" />
+                </div>
+                <div class="ca-field">
+                  <label>Password</label>
+                  <input v-model="loginPassword" type="password" required
+                         autocomplete="current-password" />
+                </div>
+                <p v-if="loginError" class="ca-field"><span class="err">{{ loginError }}</span></p>
+                <button type="submit" class="ca-btn lg" :disabled="loginLoading" style="width:100%">
+                  {{ loginLoading ? 'Signing in…' : 'Sign in' }}
+                </button>
+              </form>
             </div>
           </div>
-          <div class="form-group">
-            <label>Contact email *</label>
-            <input v-model="form.email" type="email" required placeholder="you@yourbusiness.com" />
-          </div>
-        </div>
+        </Transition>
+      </section>
 
-        <!-- Step 2: Audience & voice -->
-        <div v-if="currentStep === 2">
-          <h2>Your audience &amp; brand voice</h2>
-          <p class="step-desc">The more specific you are, the better the content.</p>
-          <div class="form-group">
-            <label>Target audience</label>
-            <textarea v-model="form.target_audience" rows="3" maxlength="500"
-                      placeholder="e.g. Women aged 25-45 in south Dublin interested in fitness and wellness"></textarea>
-            <span class="char-count">{{ form.target_audience.length }}/500</span>
-          </div>
-          <div class="form-group">
-            <label>Brand tone</label>
-            <div class="tone-grid">
-              <button v-for="tone in tones" :key="tone.value"
-                      :class="['tone-btn', { selected: form.tone === tone.value }]"
-                      type="button" @click="form.tone = tone.value">
-                {{ tone.label }}
-              </button>
+      <!-- Onboarding form steps -->
+      <section v-else class="onboard">
+        <header class="onboard-head">
+          <span class="ca-kicker">Step {{ currentStep }} of 3</span>
+          <h1>{{ stepTitles[currentStep - 1] }}</h1>
+          <p>{{ stepDescs[currentStep - 1] }}</p>
+        </header>
+
+        <form class="form-card" @submit.prevent="currentStep === 3 ? submitOnboarding() : nextStep()">
+
+          <!-- Step 1: Business info -->
+          <template v-if="currentStep === 1">
+            <div class="ca-field">
+              <label for="f-name">Business name</label>
+              <input id="f-name" v-model="form.business_name" type="text" required maxlength="255"
+                     placeholder="e.g. City Fit Gym" />
             </div>
-          </div>
-          <div class="form-group">
-            <label>Brand keywords</label>
-            <input v-model="form.brand_keywords" type="text" maxlength="300"
-                   placeholder="e.g. results-driven, community, transformation" />
-            <span class="field-hint">Comma-separated words/phrases that define your brand</span>
-          </div>
-          <div class="form-group">
-            <label>Main competitors (optional)</label>
-            <input v-model="form.competitors" type="text" maxlength="300"
-                   placeholder="e.g. Anytime Fitness, PureGym" />
-            <span class="field-hint">We'll differentiate your content from theirs</span>
-          </div>
-        </div>
+            <div class="ca-field">
+              <label for="f-type">Business type</label>
+              <select id="f-type" v-model="form.business_type" required>
+                <option value="">Select type…</option>
+                <option value="gym">Gym / personal training</option>
+                <option value="salon">Hair salon / beauty</option>
+                <option value="restaurant">Restaurant / café</option>
+                <option value="clinic">Clinic / med spa</option>
+                <option value="real_estate">Real-estate agent</option>
+                <option value="other">Other local business</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="ca-field">
+                <label for="f-city">City</label>
+                <input id="f-city" v-model="form.city" type="text" required maxlength="100"
+                       placeholder="e.g. Dublin" />
+              </div>
+              <div class="ca-field">
+                <label for="f-country">Country</label>
+                <input id="f-country" v-model="form.country" type="text" maxlength="2"
+                       placeholder="IE" />
+              </div>
+            </div>
+            <div class="ca-field">
+              <label for="f-email">Contact email</label>
+              <input id="f-email" v-model="form.email" type="email" required
+                     placeholder="you@yourbusiness.com" />
+            </div>
+          </template>
 
-        <!-- Step 3: Social handles + consent -->
-        <div v-if="currentStep === 3">
-          <h2>Social profiles &amp; consent</h2>
-          <p class="step-desc">Optional but helps us tailor content. Never used for automated posting.</p>
-          <div class="form-group">
-            <label>LinkedIn URL (optional)</label>
-            <input v-model="form.linkedin_url" type="url" maxlength="500"
-                   placeholder="https://linkedin.com/company/yourbusiness" />
-          </div>
-          <div class="form-group">
-            <label>Instagram handle (optional)</label>
-            <input v-model="form.instagram_handle" type="text" maxlength="100"
-                   placeholder="@yourbusiness" />
-          </div>
-          <div class="form-group">
-            <label>Facebook page URL (optional)</label>
-            <input v-model="form.facebook_page" type="url" maxlength="500"
-                   placeholder="https://facebook.com/yourbusiness" />
-          </div>
+          <!-- Step 2: Audience & voice -->
+          <template v-if="currentStep === 2">
+            <div class="ca-field">
+              <label for="f-aud">Target audience</label>
+              <textarea id="f-aud" v-model="form.target_audience" rows="3" maxlength="500"
+                        placeholder="e.g. Women aged 25–45 in south Dublin interested in fitness and wellness"></textarea>
+              <span class="hint">{{ form.target_audience.length }}/500</span>
+            </div>
 
-          <div class="gdpr-box">
-            <label class="checkbox-label">
+            <div class="ca-field">
+              <label>Brand tone</label>
+              <div class="tone-grid">
+                <button v-for="tone in tones" :key="tone.value"
+                        type="button"
+                        class="tone-chip"
+                        :class="{ selected: form.tone === tone.value }"
+                        @click="form.tone = tone.value">
+                  <span class="tone-label">{{ tone.label }}</span>
+                  <span class="tone-hint">{{ tone.hint }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="ca-field">
+              <label for="f-kw">Brand keywords</label>
+              <input id="f-kw" v-model="form.brand_keywords" type="text" maxlength="300"
+                     placeholder="results-driven, community, transformation" />
+              <span class="hint">Comma-separated words and phrases that define your brand.</span>
+            </div>
+            <div class="ca-field">
+              <label for="f-comp">Main competitors (optional)</label>
+              <input id="f-comp" v-model="form.competitors" type="text" maxlength="300"
+                     placeholder="Anytime Fitness, PureGym" />
+              <span class="hint">We'll differentiate your content from theirs.</span>
+            </div>
+          </template>
+
+          <!-- Step 3: Social handles + consent -->
+          <template v-if="currentStep === 3">
+            <div class="ca-field">
+              <label for="f-li">LinkedIn URL (optional)</label>
+              <input id="f-li" v-model="form.linkedin_url" type="url" maxlength="500"
+                     placeholder="https://linkedin.com/company/yourbusiness" />
+            </div>
+            <div class="ca-field">
+              <label for="f-ig">Instagram handle (optional)</label>
+              <input id="f-ig" v-model="form.instagram_handle" type="text" maxlength="100"
+                     placeholder="@yourbusiness" />
+            </div>
+            <div class="ca-field">
+              <label for="f-fb">Facebook page URL (optional)</label>
+              <input id="f-fb" v-model="form.facebook_page" type="url" maxlength="500"
+                     placeholder="https://facebook.com/yourbusiness" />
+            </div>
+
+            <label class="gdpr">
               <input v-model="form.gdpr_consent" type="checkbox" required />
               <span>
-                I agree that ContentAgency.ai stores my business information to generate social media
-                content on my behalf. I understand I can
+                I agree that ContentAgency.ai stores my business information to generate
+                social-media content on my behalf. I understand I can
                 <router-link to="/agency/privacy">view my data or request deletion</router-link>
-                at any time. *
+                at any time.
               </span>
             </label>
+          </template>
+
+          <p v-if="formError" class="ca-field"><span class="err">{{ formError }}</span></p>
+
+          <div class="form-nav">
+            <button v-if="currentStep > 1" type="button" class="ca-btn ghost"
+                    @click="currentStep--">← Back</button>
+            <div class="form-nav-spacer"></div>
+            <button v-if="currentStep < 3" type="submit" class="ca-btn">
+              Continue <span class="arrow">→</span>
+            </button>
+            <button v-if="currentStep === 3" type="submit" class="ca-btn" :disabled="submitting">
+              {{ submitting ? 'Saving…' : 'Submit and create account →' }}
+            </button>
           </div>
-        </div>
-
-        <!-- Errors -->
-        <p v-if="formError" class="form-error">{{ formError }}</p>
-
-        <!-- Navigation -->
-        <div class="form-nav">
-          <button v-if="currentStep > 1" class="btn-ghost" type="button" @click="currentStep--">
-            ← Back
-          </button>
-          <button v-if="currentStep < 3" class="btn-primary" type="button" @click="nextStep">
-            Continue →
-          </button>
-          <button v-if="currentStep === 3" class="btn-primary" type="button"
-                  @click="submitOnboarding" :disabled="submitting">
-            {{ submitting ? 'Saving…' : 'Submit & Create Account →' }}
-          </button>
-        </div>
-      </div>
-    </div>
+        </form>
+      </section>
+    </main>
   </div>
 </template>
 
@@ -194,14 +211,30 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAgencyAuth } from '../../store/agencyAuth.js'
 import { submitOnboarding as apiSubmitOnboarding } from '../../api/agency.js'
+import { useReveal } from '../../composables/useReveal.js'
 
 const router = useRouter()
 const auth   = useAgencyAuth()
+
+const root = ref(null)
+useReveal(root)
 
 const currentStep = ref(1)
 const submitted   = ref(false)
 const submitting  = ref(false)
 const formError   = ref('')
+
+const stepTitles = [
+  'Tell us about your business',
+  'Your audience and brand voice',
+  'Social profiles and consent',
+]
+const stepDescs = [
+  'This shapes every post we write for you. Be specific — specific wins.',
+  'The more colour you give us here, the sharper the drafts arrive.',
+  'Optional handles help us tailor content. We never post automatically on your behalf.',
+]
+const stepLabels = ['Business', 'Voice', 'Handles']
 
 const form = reactive({
   business_name:    '',
@@ -220,14 +253,13 @@ const form = reactive({
 })
 
 const tones = [
-  { value: 'friendly',     label: '😊 Friendly'      },
-  { value: 'professional', label: '💼 Professional'  },
-  { value: 'bold',         label: '🔥 Bold'          },
-  { value: 'calm',         label: '🌿 Calm'          },
-  { value: 'playful',      label: '🎉 Playful'       },
+  { value: 'friendly',     label: 'Friendly',     hint: 'warm, first-person'       },
+  { value: 'professional', label: 'Professional', hint: 'crisp, measured'          },
+  { value: 'bold',         label: 'Bold',         hint: 'punchy, opinionated'      },
+  { value: 'calm',         label: 'Calm',         hint: 'quiet, deliberate'        },
+  { value: 'playful',      label: 'Playful',      hint: 'light, a little cheeky'   },
 ]
 
-// Auth state for post-submit account creation
 const authEmail    = ref('')
 const authPassword = ref('')
 const authError    = ref('')
@@ -238,16 +270,13 @@ const loginPassword = ref('')
 const loginError   = ref('')
 const loginLoading = ref(false)
 
-// Saved client ID from onboarding response
-let savedClientId = null
-
 function nextStep() {
   formError.value = ''
   if (currentStep.value === 1) {
     if (!form.business_name.trim()) { formError.value = 'Business name is required'; return }
-    if (!form.business_type) { formError.value = 'Business type is required'; return }
-    if (!form.city.trim()) { formError.value = 'City is required'; return }
-    if (!form.email.trim()) { formError.value = 'Contact email is required'; return }
+    if (!form.business_type)        { formError.value = 'Business type is required'; return }
+    if (!form.city.trim())          { formError.value = 'City is required'; return }
+    if (!form.email.trim())         { formError.value = 'Contact email is required'; return }
   }
   currentStep.value++
 }
@@ -260,11 +289,9 @@ async function submitOnboarding() {
   }
   submitting.value = true
 
-  // If user is already logged in, submit immediately
   if (auth.state.isAuthenticated) {
     try {
-      const res = await apiSubmitOnboarding({ ...form })
-      savedClientId = res.data?.id
+      await apiSubmitOnboarding({ ...form })
       router.push('/agency/portal')
     } catch (err) {
       formError.value = err?.message || 'Submission failed. Please try again.'
@@ -274,7 +301,6 @@ async function submitOnboarding() {
     return
   }
 
-  // Store form data in sessionStorage to reuse after registration
   sessionStorage.setItem('agency_pending_onboarding', JSON.stringify({ ...form }))
   submitted.value  = true
   submitting.value = false
@@ -285,12 +311,8 @@ async function handleAuth() {
   authLoading.value = true
   try {
     await auth.register(authEmail.value, authPassword.value)
-    // Resubmit onboarding now that we're authenticated
     const pending = JSON.parse(sessionStorage.getItem('agency_pending_onboarding') || '{}')
-    if (pending.business_name) {
-      const res = await apiSubmitOnboarding(pending)
-      savedClientId = res.data?.id
-    }
+    if (pending.business_name) await apiSubmitOnboarding(pending)
     sessionStorage.removeItem('agency_pending_onboarding')
     router.push('/agency/portal')
   } catch (err) {
@@ -301,15 +323,12 @@ async function handleAuth() {
 }
 
 async function handleLogin() {
-  loginError.value  = ''
+  loginError.value   = ''
   loginLoading.value = true
   try {
     await auth.login(loginEmail.value, loginPassword.value)
-    // Resubmit onboarding
     const pending = JSON.parse(sessionStorage.getItem('agency_pending_onboarding') || '{}')
-    if (pending.business_name) {
-      await apiSubmitOnboarding(pending)
-    }
+    if (pending.business_name) await apiSubmitOnboarding(pending)
     sessionStorage.removeItem('agency_pending_onboarding')
     showLogin.value = false
     router.push('/agency/portal')
@@ -322,62 +341,178 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.agency-onboarding { font-family: 'Courier New', monospace; background: #fff; color: #111; min-height: 100vh; }
-.agency-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 2px solid #111; }
-.nav-brand { font-size: 1.2rem; font-weight: bold; text-decoration: none; color: #111; }
-.step-indicator { display: flex; gap: 12px; align-items: center; }
-.step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; color: #999; }
-.step-dot.active { border-color: #111; color: #111; background: #111; color: #fff; }
-.step-dot.done { border-color: #111; background: #f0f0f0; color: #111; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 0 clamp(var(--s-5), 4vw, var(--s-7)); }
 
-.onboarding-form { max-width: 600px; margin: 60px auto; padding: 0 24px; }
-.form-card { border: 2px solid #111; padding: 40px; }
-.form-card h2 { font-size: 1.8rem; margin-bottom: 8px; }
-.step-desc { color: #555; margin-bottom: 32px; }
-
-.form-group { margin-bottom: 22px; position: relative; }
-.form-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; }
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 10px; border: 2px solid #ccc;
-  font-family: inherit; font-size: 0.95rem; box-sizing: border-box;
-  transition: border-color 0.15s;
+/* ── Progress dots in nav ─────────────────────────────────────────────── */
+.step-indicator { display: flex; gap: 2px; align-items: center; }
+.step-dot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  transition: background var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out);
+  color: var(--ink-lo);
+  font-size: var(--caption);
 }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #111; outline: none; }
-.form-group textarea { resize: vertical; }
-.char-count { position: absolute; right: 0; bottom: -18px; font-size: 0.75rem; color: #aaa; }
-.field-hint { font-size: 0.78rem; color: #888; margin-top: 4px; display: block; }
+.step-dot.active {
+  background: var(--ink-hi); color: var(--paper);
+}
+.step-dot.done {
+  color: var(--brand);
+}
+.step-dot-num { font-family: var(--font-mono); letter-spacing: 0.06em; }
+.step-dot-label { font-family: var(--font-body); letter-spacing: -0.005em; }
+@media (max-width: 640px) { .step-dot-label { display: none; } }
 
-.form-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+/* ── Header ───────────────────────────────────────────────────────────── */
+.onboard-head { padding: var(--s-9) 0 var(--s-7); }
+.onboard-head h1 {
+  font-size: clamp(2rem, 3.6vw + 1rem, 3.5rem);
+  margin: var(--s-3) 0 var(--s-4);
+  letter-spacing: -0.028em;
+  font-weight: 500;
+}
+.onboard-head p { color: var(--ink-mid); font-size: var(--body-lg); max-width: 60ch; }
 
-.tone-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-.tone-btn { padding: 8px 16px; border: 2px solid #ddd; background: #fff; font-family: inherit; cursor: pointer; font-size: 0.88rem; }
-.tone-btn.selected { border-color: #111; background: #111; color: #fff; }
+.form-card {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-4);
+  padding: clamp(var(--s-5), 4vw, var(--s-7));
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--s-9);
+}
 
-.gdpr-box { border: 2px solid #eee; padding: 20px; background: #fafafa; margin-top: 8px; }
-.checkbox-label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 0.88rem; line-height: 1.5; }
-.checkbox-label input { margin-top: 3px; flex-shrink: 0; }
-.checkbox-label a { color: #111; }
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--s-4);
+}
+@media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
 
-.form-error { color: #c00; font-size: 0.85rem; margin-bottom: 16px; }
-.form-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; gap: 16px; }
+/* ── Tone chips ───────────────────────────────────────────────────────── */
+.tone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-2);
+}
+.tone-chip {
+  appearance: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  font-family: inherit;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-3);
+  color: var(--ink);
+  transition: border-color var(--dur-2) var(--ease-out),
+              background var(--dur-2) var(--ease-out),
+              transform var(--dur-2) var(--ease-out);
+}
+.tone-chip:hover { border-color: var(--hairline-2); transform: translateY(-1px); }
+.tone-chip.selected {
+  background: var(--ink-hi);
+  border-color: var(--ink-hi);
+  color: var(--paper);
+}
+.tone-label { font-weight: 500; font-size: 0.95rem; }
+.tone-hint {
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.02em;
+  color: color-mix(in oklab, currentColor, transparent 40%);
+}
 
-.btn-primary { display: inline-block; background: #111; color: #fff; padding: 14px 28px; font-family: inherit; font-size: 0.95rem; font-weight: bold; border: 2px solid #111; cursor: pointer; text-decoration: none; }
-.btn-primary:hover:not(:disabled) { background: #333; }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-ghost { display: inline-block; background: transparent; color: #111; padding: 12px 24px; font-family: inherit; font-size: 0.95rem; border: 2px solid #ddd; cursor: pointer; }
+/* ── GDPR consent ─────────────────────────────────────────────────────── */
+.gdpr {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-3);
+  font-size: var(--small);
+  line-height: 1.55;
+  color: var(--ink-mid);
+  cursor: pointer;
+}
+.gdpr input { margin-top: 3px; accent-color: var(--brand); }
+.gdpr a { color: var(--ink-hi); font-weight: 500; }
 
-/* Done state */
-.onboarding-done { max-width: 540px; margin: 80px auto; padding: 0 24px; text-align: center; }
-.done-icon { font-size: 3rem; margin-bottom: 16px; }
-.onboarding-done h2 { font-size: 2rem; margin-bottom: 12px; }
-.onboarding-done > p { color: #555; margin-bottom: 32px; }
-.auth-form { text-align: left; border: 2px solid #111; padding: 32px; }
-.hint { font-weight: normal; color: #888; }
-.login-link { margin-top: 16px; font-size: 0.85rem; text-align: center; }
-.login-link a { color: #111; font-weight: bold; }
+/* ── Form nav ─────────────────────────────────────────────────────────── */
+.form-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--hairline);
+}
+.form-nav-spacer { flex: 1; }
+.arrow { transition: transform var(--dur-2) var(--ease-out); display: inline-block; }
+.ca-btn:hover .arrow { transform: translateX(3px); }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border: 2px solid #111; padding: 40px; width: 100%; max-width: 420px; position: relative; }
-.modal h3 { font-size: 1.4rem; margin-bottom: 24px; }
-.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+/* ── Done state ───────────────────────────────────────────────────────── */
+.done { padding: var(--s-9) 0; max-width: 540px; margin: 0 auto; }
+.done h1 {
+  font-size: clamp(2rem, 3.6vw + 1rem, 3.5rem);
+  margin: var(--s-3) 0 var(--s-4);
+  letter-spacing: -0.028em;
+  font-weight: 500;
+}
+.done > p { color: var(--ink-mid); margin-bottom: var(--s-7); }
+.auth-form {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-4);
+  padding: var(--s-7);
+  box-shadow: var(--shadow-sm);
+}
+.login-link {
+  margin-top: var(--s-4);
+  text-align: center;
+  font-size: var(--small);
+  color: var(--ink-mid);
+}
+.login-link a { color: var(--ink-hi); font-weight: 500; }
+
+/* ── Modal ────────────────────────────────────────────────────────────── */
+.ca-modal-overlay {
+  position: fixed; inset: 0;
+  background: color-mix(in oklab, var(--void), transparent 20%);
+  backdrop-filter: blur(6px);
+  display: grid; place-items: center;
+  z-index: 200;
+  padding: var(--s-4);
+}
+.ca-modal {
+  background: var(--paper);
+  border-radius: var(--r-5);
+  padding: var(--s-7);
+  width: 100%; max-width: 440px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+}
+.ca-modal h3 { font-size: 1.625rem; margin: var(--s-2) 0 var(--s-5); letter-spacing: -0.02em; }
+.ca-modal-close {
+  position: absolute; top: 14px; right: 14px;
+  background: transparent; border: none; cursor: pointer;
+  font-size: 1.75rem; line-height: 1;
+  color: var(--ink-mid);
+  width: 36px; height: 36px;
+  border-radius: var(--r-full);
+  transition: background var(--dur-2) var(--ease-out);
+}
+.ca-modal-close:hover { background: var(--surface-2); color: var(--ink-hi); }
+.ca-modal-form { display: flex; flex-direction: column; gap: 2px; }
+
+.modal-enter-active, .modal-leave-active { transition: opacity var(--dur-2) var(--ease-out); }
+.modal-enter-active .ca-modal, .modal-leave-active .ca-modal { transition: transform var(--dur-3) var(--ease-out); }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-from .ca-modal, .modal-leave-to .ca-modal { transform: translateY(8px) scale(0.98); }
 </style>

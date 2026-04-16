@@ -1,37 +1,42 @@
 <template>
-  <div class="content-calendar">
-    <div class="calendar-grid">
-      <div
+  <div class="cal">
+    <ul class="cal-grid" aria-label="30-day content calendar">
+      <li
         v-for="day in 30"
         :key="day"
-        class="day-cell"
+        class="day"
       >
-        <div class="day-label">Day {{ day }}</div>
-        <div class="day-date">{{ dayDate(day) }}</div>
-        <div class="posts-in-day">
-          <div
+        <div class="day-head">
+          <span class="day-num">{{ day }}</span>
+          <span class="day-date">{{ dayDate(day) }}</span>
+        </div>
+        <div class="day-posts">
+          <button
             v-for="post in postsForDay(day)"
             :key="post.id"
-            :class="['post-chip', post.platform, post.post_type, { flagged: post.revision_note, approved: post.is_approved }]"
+            type="button"
+            :class="[
+              'chip', post.platform,
+              { flagged: post.revision_note, approved: post.is_approved }
+            ]"
             @click="$emit('select-post', post)"
-            :title="`${post.platform} · ${post.post_type}`"
+            :aria-label="`${post.platform} ${post.post_type}, day ${day}${post.is_approved ? ', approved' : post.revision_note ? ', revision requested' : ''}`"
           >
-            <span class="chip-platform">{{ platformIcon(post.platform) }}</span>
+            <span class="chip-plat">{{ platformIcon(post.platform) }}</span>
             <span class="chip-type">{{ post.post_type }}</span>
-            <span v-if="post.revision_note" class="chip-flag" title="Revision requested">⚠</span>
-            <span v-if="post.is_approved" class="chip-approved" title="Approved">✓</span>
-          </div>
+            <span v-if="post.revision_note" class="chip-mark flag" aria-hidden="true">⚠</span>
+            <span v-if="post.is_approved" class="chip-mark ok" aria-hidden="true">✓</span>
+          </button>
         </div>
-      </div>
-    </div>
+      </li>
+    </ul>
 
-    <!-- Legend -->
-    <div class="legend">
-      <span class="legend-title">Post types:</span>
-      <span class="legend-item educational">Educational</span>
-      <span class="legend-item promotional">Promotional</span>
-      <span class="legend-item engagement">Engagement</span>
-      <span class="legend-item story">Story</span>
+    <div class="legend" aria-hidden="true">
+      <span class="ca-kicker">Legend</span>
+      <span class="legend-item" data-k="educational">Educational</span>
+      <span class="legend-item" data-k="promotional">Promotional</span>
+      <span class="legend-item" data-k="engagement">Engagement</span>
+      <span class="legend-item" data-k="story">Story</span>
     </div>
   </div>
 </template>
@@ -61,99 +66,119 @@ function dayDate(day) {
 }
 
 function platformIcon(platform) {
-  const icons = { linkedin: 'in', instagram: '📸', facebook: 'fb', twitter: '𝕏' }
-  return icons[platform] || platform[0].toUpperCase()
+  return { linkedin: 'in', instagram: 'ig', facebook: 'fb', twitter: 'x' }[platform] || platform[0]
 }
 </script>
 
 <style scoped>
-.content-calendar { width: 100%; }
+.cal { width: 100%; }
 
-.calendar-grid {
+.cal-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-3);
+  overflow: hidden;
 }
 
-.day-cell {
-  border: 1px solid #e0e0e0;
-  padding: 10px;
-  background: #fff;
-  min-height: 100px;
+.day {
+  display: flex; flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--paper);
+  min-height: 108px;
+  transition: background var(--dur-2) var(--ease-out);
 }
+.day:hover { background: var(--surface-1); }
 
-.day-label {
-  font-size: 0.7rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #999;
-  margin-bottom: 2px;
+.day-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 6px;
 }
-
+.day-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+}
 .day-date {
-  font-size: 0.8rem;
-  color: #555;
-  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.03em;
+  color: var(--ink-lo);
 }
 
-.posts-in-day {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.day-posts {
+  display: flex; flex-direction: column; gap: 4px;
 }
 
-.post-chip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  font-size: 0.7rem;
-  cursor: pointer;
+.chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.03em;
   border: 1px solid transparent;
-  border-radius: 2px;
-  transition: opacity 0.1s;
-  user-select: none;
+  border-radius: var(--r-1);
+  cursor: pointer;
+  background: var(--surface-1);
+  color: var(--ink-mid);
+  text-align: left;
+  transition: transform var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
 }
-.post-chip:hover { opacity: 0.75; }
+.chip:hover {
+  transform: translateX(1px);
+  border-color: var(--ink-hi);
+}
+.chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
 
-/* Platform colours */
-.post-chip.linkedin   { background: #e8f0f8; border-color: #b0c8e8; }
-.post-chip.instagram  { background: #fce8f4; border-color: #e8b0d0; }
-.post-chip.facebook   { background: #e8ecf8; border-color: #b0bce8; }
-.post-chip.twitter    { background: #e8f4fc; border-color: #b0d8ec; }
+.chip.linkedin  { background: color-mix(in oklab, oklch(0.40 0.13 245), var(--paper) 90%); color: oklch(0.35 0.13 245); }
+.chip.instagram { background: color-mix(in oklab, oklch(0.50 0.18 350), var(--paper) 92%); color: oklch(0.40 0.16 350); }
+.chip.facebook  { background: color-mix(in oklab, oklch(0.42 0.15 260), var(--paper) 92%); color: oklch(0.35 0.14 260); }
+.chip.twitter   { background: var(--surface-2); color: var(--ink-hi); }
 
-/* Post type tint */
-.post-chip.educational  { opacity: 0.9; }
-.post-chip.promotional  { font-weight: bold; }
-.post-chip.engagement   { font-style: italic; }
+.chip.flagged  { border-color: color-mix(in oklab, var(--flame), transparent 50%); }
+.chip.approved { border-color: color-mix(in oklab, var(--ok), transparent 55%); }
 
-/* State indicators */
-.post-chip.flagged  { border-color: #f90; }
-.post-chip.approved { border-color: #090; }
+.chip-plat {
+  font-weight: 600;
+  min-width: 16px;
+}
+.chip-type {
+  flex: 1;
+  text-transform: capitalize;
+  font-weight: 500;
+}
+.chip-mark {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+.chip-mark.flag { color: oklch(0.45 0.15 75); }
+.chip-mark.ok   { color: var(--ok); }
 
-.chip-platform { font-weight: bold; font-size: 0.68rem; }
-.chip-type { flex: 1; font-size: 0.68rem; text-transform: capitalize; color: #555; }
-.chip-flag { color: #f90; }
-.chip-approved { color: #090; }
-
-/* Legend */
 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: flex; flex-wrap: wrap; gap: var(--s-3);
   align-items: center;
-  margin-top: 20px;
-  font-size: 0.8rem;
+  margin-top: var(--s-5);
+  font-size: var(--caption);
+  color: var(--ink-lo);
 }
-.legend-title { font-weight: bold; color: #555; }
 .legend-item {
-  padding: 2px 10px;
-  border-radius: 2px;
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
 }
-.legend-item.educational { background: #e8f0f8; }
-.legend-item.promotional { background: #ffe0e0; font-weight: bold; }
-.legend-item.engagement  { background: #e8fce8; font-style: italic; }
-.legend-item.story       { background: #fef8e0; }
 </style>

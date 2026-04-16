@@ -52,10 +52,11 @@ def create_app(config_class=Config):
 
     # Create all agency DB tables on first run (idempotent)
     with app.app_context():
-        from .models.agency_auth import AgencyUser       # noqa: F401
-        from .models.agency_client import AgencyClient   # noqa: F401
-        from .models.agency_content import ContentPackage, ContentPost  # noqa: F401
-        from .models.agency_outreach import OutreachCampaign, OutreachLead  # noqa: F401
+        from .models.agency_auth import AgencyUser                           # noqa: F401
+        from .models.agency_client import AgencyClient                       # noqa: F401
+        from .models.agency_content import ContentPackage, ContentPost       # noqa: F401
+        from .models.agency_outreach import OutreachCampaign, OutreachLead   # noqa: F401
+        from .models.agency_conversation import AgencyConversation           # noqa: F401
         db.create_all()
 
     if should_log_startup:
@@ -113,17 +114,33 @@ def create_app(config_class=Config):
 
     # Agency module blueprints
     from .api import (agency_auth_bp, agency_clients_bp,
-                      agency_content_bp, agency_outreach_bp)
-    app.register_blueprint(agency_auth_bp,     url_prefix='/api/agency/auth')
-    app.register_blueprint(agency_clients_bp,  url_prefix='/api/agency/clients')
-    app.register_blueprint(agency_content_bp,  url_prefix='/api/agency/content')
-    app.register_blueprint(agency_outreach_bp, url_prefix='/api/agency/outreach')
+                      agency_content_bp, agency_outreach_bp,
+                      agency_chat_bp, agency_scheduler_bp)
+    app.register_blueprint(agency_auth_bp,      url_prefix='/api/agency/auth')
+    app.register_blueprint(agency_clients_bp,   url_prefix='/api/agency/clients')
+    app.register_blueprint(agency_content_bp,   url_prefix='/api/agency/content')
+    app.register_blueprint(agency_outreach_bp,  url_prefix='/api/agency/outreach')
+    app.register_blueprint(agency_chat_bp,      url_prefix='/api/agency/chat')
+    app.register_blueprint(agency_scheduler_bp, url_prefix='/api/agency/scheduler')
 
     # ── Health check ──────────────────────────────────────────────────────────
 
     @app.route('/health')
     def health():
         return {'status': 'ok', 'service': 'MiroFish Backend'}
+
+    # ── Autonomous scheduler ──────────────────────────────────────────────────
+    # Start APScheduler only in the main process (not the Werkzeug reloader watcher)
+    if not app.config.get('TESTING') and (
+        not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
+    ):
+        try:
+            from .services.agency_scheduler import init_scheduler
+            init_scheduler(app)
+            if should_log_startup:
+                logger.info("Autonomous scheduler started")
+        except Exception as _sched_err:
+            logger.warning(f"Scheduler could not start: {_sched_err}")
 
     # ── Serve Vue SPA (unified production mode) ───────────────────────────────
     # When SERVE_FRONTEND=true, Flask serves the built Vue dist folder so the

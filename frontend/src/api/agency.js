@@ -103,3 +103,40 @@ export const updateLead = (leadId, data) =>
 
 export const personaliseOpener = (data) =>
   service.post('/api/agency/outreach/personalise', data, { headers: authHeader() })
+
+export const scoutCampaign = (campaignId, limit = 20) =>
+  service.post(`/api/agency/outreach/campaign/${campaignId}/scout`,
+    { limit }, { headers: authHeader() })
+
+export const startEmailSequence = (campaignId, leadIds = null) =>
+  service.post(`/api/agency/outreach/campaign/${campaignId}/email-sequence/start`,
+    leadIds ? { lead_ids: leadIds } : {}, { headers: authHeader() })
+
+// ── AI Chat Closer ────────────────────────────────────────────────────────────
+
+export const startConversation = (leadId) =>
+  service.post(`/api/agency/chat/lead/${leadId}/start`, {}, { headers: authHeader() })
+
+export const injectReply = (convId, message) =>
+  service.post(`/api/agency/chat/conversation/${convId}/reply`,
+    { message }, { headers: authHeader() })
+
+export const listConversations = (leadId) =>
+  service.get(`/api/agency/chat/lead/${leadId}`, { headers: authHeader() })
+
+export const getConversation = (convId) =>
+  service.get(`/api/agency/chat/conversation/${convId}`, { headers: authHeader() })
+
+// ── Scheduler ─────────────────────────────────────────────────────────────────
+
+export const getSchedulerStatus = () =>
+  service.get('/api/agency/scheduler/status', { headers: authHeader() })
+
+export const runSchedulerJob = (jobId) =>
+  service.post(`/api/agency/scheduler/jobs/${jobId}/run`, {}, { headers: authHeader() })
+
+export const pauseScheduler = () =>
+  service.post('/api/agency/scheduler/pause', {}, { headers: authHeader() })
+
+export const resumeScheduler = () =>
+  service.post('/api/agency/scheduler/resume', {}, { headers: authHeader() })

@@ -32,6 +32,9 @@ dependencies = [
     "flask-limiter>=4.1.1",
     "anthropic>=0.94.1",
     "bleach>=6.3.0",
+    # Agency automation
+    "apscheduler>=3.10.4",
+    "googlemaps>=4.10.0",
 ]
 
 [project.optional-dependencies]

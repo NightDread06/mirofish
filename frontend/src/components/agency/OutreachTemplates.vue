@@ -1,106 +1,114 @@
 <template>
-  <div class="outreach-templates">
-    <h2>{{ campaign.name }}</h2>
-    <div class="campaign-info">
-      <span class="info-tag">{{ campaign.business_type }}</span>
-      <span class="info-tag">{{ campaign.target_city }}</span>
-      <span class="badge" :class="campaign.status">{{ campaign.status }}</span>
+  <div class="outreach">
+    <header class="ot-head">
+      <span class="ca-kicker">Outreach</span>
+      <h2>{{ campaign.name }}</h2>
+      <div class="ot-meta">
+        <span class="ca-pill">{{ campaign.business_type }}</span>
+        <span class="ca-pill">{{ campaign.target_city }}</span>
+        <span class="ca-pill" :class="statusPill(campaign.status)">
+          {{ campaign.status }}
+        </span>
+      </div>
+    </header>
+
+    <div class="funnel">
+      <div class="funnel-step" v-for="(step, i) in funnelSteps" :key="step.key">
+        <span class="step-num">{{ campaign.metrics?.[step.key] || 0 }}</span>
+        <span class="step-lbl">{{ step.label }}</span>
+        <span v-if="i < funnelSteps.length - 1" class="step-arrow" aria-hidden="true">→</span>
+      </div>
+      <div class="funnel-conv" v-if="campaign.metrics?.total > 0">
+        <span class="ca-kicker">Close rate</span>
+        <strong>{{ closeRate }}%</strong>
+      </div>
     </div>
 
-    <!-- Funnel metrics -->
-    <div class="funnel-bar">
-      <div class="funnel-step" v-for="step in funnelSteps" :key="step.key">
-        <div class="funnel-val">{{ campaign.metrics?.[step.key] || 0 }}</div>
-        <div class="funnel-label">{{ step.label }}</div>
-      </div>
-      <div class="funnel-conversion" v-if="campaign.metrics?.total > 0">
-        Close rate: {{ closeRate }}%
-      </div>
-    </div>
-
-    <div v-if="!campaign.templates?.connection_msg" class="no-templates">
-      <p>Templates are being generated… Refresh in a moment.</p>
+    <div v-if="!campaign.templates?.connection_msg" class="empty-templates">
+      <p>Templates are being generated. Refresh in a moment.</p>
     </div>
 
     <template v-else>
-      <!-- Template tabs -->
-      <div class="template-tabs">
-        <button v-for="t in templateTabs" :key="t.key"
-                :class="['tab', { active: activeTemplate === t.key }]"
-                @click="activeTemplate = t.key">
-          {{ t.label }}
-        </button>
+      <div class="tabs" role="tablist">
+        <button
+          v-for="t in templateTabs"
+          :key="t.key"
+          :class="['tab', { active: activeTemplate === t.key }]"
+          role="tab"
+          :aria-selected="activeTemplate === t.key"
+          @click="activeTemplate = t.key"
+        >{{ t.label }}</button>
       </div>
 
-      <!-- Connection request -->
-      <div v-if="activeTemplate === 'connection'" class="template-block">
-        <div class="template-header">
-          <span>LinkedIn Connection Note</span>
-          <span class="char-count" :class="{ warning: connectionLength > 250 }">
-            {{ connectionLength }}/300 chars
+      <div v-if="activeTemplate === 'connection'" class="t-block">
+        <div class="t-head">
+          <span class="t-title">LinkedIn connection note</span>
+          <span class="char-count" :class="{ warn: connectionLength > 250 }">
+            {{ connectionLength }}/300
           </span>
-          <button class="copy-btn" @click="copyTemplate('connection', campaign.templates.connection_msg)">
-            {{ copied === 'connection' ? 'Copied!' : 'Copy' }}
-          </button>
+          <button
+            class="copy-btn"
+            @click="copyTemplate('connection', campaign.templates.connection_msg)"
+          >{{ copied === 'connection' ? 'Copied' : 'Copy' }}</button>
         </div>
-        <div class="template-text">{{ campaign.templates.connection_msg }}</div>
+        <pre class="t-text">{{ campaign.templates.connection_msg }}</pre>
       </div>
 
-      <!-- DM sequence -->
-      <div v-if="activeTemplate === 'dm1'" class="template-block">
-        <div class="template-header">
-          <span>Initial DM (after connecting)</span>
+      <div v-if="activeTemplate === 'dm1'" class="t-block">
+        <div class="t-head">
+          <span class="t-title">Initial DM (after connecting)</span>
           <button class="copy-btn" @click="copyTemplate('dm1', campaign.templates.dm_1)">
-            {{ copied === 'dm1' ? 'Copied!' : 'Copy' }}
+            {{ copied === 'dm1' ? 'Copied' : 'Copy' }}
           </button>
         </div>
-        <div class="template-text">{{ campaign.templates.dm_1 }}</div>
+        <pre class="t-text">{{ campaign.templates.dm_1 }}</pre>
       </div>
 
-      <div v-if="activeTemplate === 'dm2'" class="template-block">
-        <div class="template-header">
-          <span>Follow-up #1 — Day 3 (if no reply)</span>
+      <div v-if="activeTemplate === 'dm2'" class="t-block">
+        <div class="t-head">
+          <span class="t-title">Follow-up #1 — day 3</span>
           <button class="copy-btn" @click="copyTemplate('dm2', campaign.templates.dm_2)">
-            {{ copied === 'dm2' ? 'Copied!' : 'Copy' }}
+            {{ copied === 'dm2' ? 'Copied' : 'Copy' }}
           </button>
         </div>
-        <div class="template-text">{{ campaign.templates.dm_2 }}</div>
+        <pre class="t-text">{{ campaign.templates.dm_2 }}</pre>
       </div>
 
-      <div v-if="activeTemplate === 'dm3'" class="template-block">
-        <div class="template-header">
-          <span>Follow-up #2 — Day 7 (value-add close)</span>
+      <div v-if="activeTemplate === 'dm3'" class="t-block">
+        <div class="t-head">
+          <span class="t-title">Follow-up #2 — day 7 (value-add close)</span>
           <button class="copy-btn" @click="copyTemplate('dm3', campaign.templates.dm_3)">
-            {{ copied === 'dm3' ? 'Copied!' : 'Copy' }}
+            {{ copied === 'dm3' ? 'Copied' : 'Copy' }}
           </button>
         </div>
-        <div class="template-text">{{ campaign.templates.dm_3 }}</div>
+        <pre class="t-text">{{ campaign.templates.dm_3 }}</pre>
       </div>
 
-      <!-- Loom script -->
-      <div v-if="activeTemplate === 'loom'" class="template-block">
-        <div class="template-header">
-          <span>60-Second Loom Video Script</span>
+      <div v-if="activeTemplate === 'loom'" class="t-block">
+        <div class="t-head">
+          <span class="t-title">60-second Loom script</span>
           <button class="copy-btn" @click="copyTemplate('loom', campaign.templates.loom_script)">
-            {{ copied === 'loom' ? 'Copied!' : 'Copy' }}
+            {{ copied === 'loom' ? 'Copied' : 'Copy' }}
           </button>
         </div>
-        <div class="template-text loom-script">{{ campaign.templates.loom_script }}</div>
-        <p class="loom-tip">Record at <strong>loom.com</strong> — screen share their website/social while reading this script.</p>
+        <pre class="t-text loom">{{ campaign.templates.loom_script }}</pre>
+        <p class="loom-tip">
+          Record at <strong>loom.com</strong> — screen share their website
+          or social while reading this script.
+        </p>
       </div>
     </template>
 
-    <!-- Tips -->
-    <div class="outreach-tips">
-      <h3>Outreach Tips</h3>
+    <aside class="tips">
+      <span class="ca-kicker">Outreach playbook</span>
       <ul>
-        <li>Send 20–30 connection requests per day (LinkedIn limits ~100/week)</li>
-        <li>Personalise the opener with a specific observation about their business</li>
-        <li>Send DM #1 within 24h of connecting — while you're top of mind</li>
-        <li>Record Loom videos only for people who respond (saves time, increases quality)</li>
-        <li>Track every lead stage using the Leads tab in your campaign</li>
+        <li>Send 20–30 connection requests per day (LinkedIn limits ~100/week).</li>
+        <li>Personalise the opener with a specific observation about their business.</li>
+        <li>Send DM #1 within 24h of connecting — while you're top of mind.</li>
+        <li>Record Loom only for people who respond — saves time, increases quality.</li>
+        <li>Track every lead stage in the Leads tab of your campaign.</li>
       </ul>
-    </div>
+    </aside>
   </div>
 </template>
 
@@ -117,11 +125,11 @@ const copied = ref('')
 const activeTemplate = ref('connection')
 
 const templateTabs = [
-  { key: 'connection', label: 'Connection Note' },
+  { key: 'connection', label: 'Connection' },
   { key: 'dm1',        label: 'DM #1' },
   { key: 'dm2',        label: 'Follow-up #1' },
   { key: 'dm3',        label: 'Follow-up #2' },
-  { key: 'loom',       label: 'Loom Script' },
+  { key: 'loom',       label: 'Loom script' },
 ]
 
 const funnelSteps = [
@@ -142,6 +150,10 @@ const closeRate = computed(() => {
   return ((closed / total) * 100).toFixed(1)
 })
 
+function statusPill(s) {
+  return { active: 'ok', draft: 'warn', paused: 'err' }[s] || ''
+}
+
 async function copyTemplate(key, text) {
   if (!text) return
   await copy(text)
@@ -151,39 +163,162 @@ async function copyTemplate(key, text) {
 </script>
 
 <style scoped>
-.outreach-templates { font-family: 'Courier New', monospace; }
-h2 { font-size: 1.5rem; margin-bottom: 8px; }
-.campaign-info { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-.info-tag { background: #f0f0f0; padding: 3px 10px; font-size: 0.8rem; }
-.badge { padding: 3px 10px; font-size: 0.78rem; border: 1px solid; }
-.badge.active { border-color: #090; color: #090; }
-.badge.draft  { border-color: #f90; color: #f90; }
+.outreach { font-family: var(--font-body); color: var(--ink); }
 
-.funnel-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 24px; padding: 16px; background: #f9f9f9; border: 1px solid #eee; }
-.funnel-step { text-align: center; }
-.funnel-val { font-size: 1.4rem; font-weight: bold; }
-.funnel-label { font-size: 0.72rem; color: #888; text-transform: uppercase; }
-.funnel-conversion { font-size: 0.82rem; font-weight: bold; margin-left: auto; }
+.ot-head { margin-bottom: var(--s-5); }
+.ot-head h2 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 1.75rem; letter-spacing: -0.02em;
+  color: var(--ink-hi);
+  margin: var(--s-2) 0 var(--s-3);
+}
+.ot-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 
-.no-templates { padding: 24px; text-align: center; color: #888; border: 2px dashed #ddd; }
+.funnel {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-3);
+  background: var(--surface-1);
+  margin-bottom: var(--s-6);
+}
+.funnel-step {
+  display: flex; align-items: center; gap: var(--s-3);
+}
+.step-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+  font-variant-numeric: tabular-nums;
+}
+.step-lbl {
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-lo);
+}
+.step-arrow { color: var(--ink-lo); font-family: var(--font-mono); }
+.funnel-conv {
+  margin-left: auto;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  font-size: var(--body-lg);
+  color: var(--ink-hi);
+}
+.funnel-conv strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
 
-.template-tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid #111; margin-bottom: 24px; }
-.tab { padding: 10px 18px; border: none; background: transparent; cursor: pointer; font-family: inherit; font-size: 0.85rem; color: #888; border-bottom: 4px solid transparent; margin-bottom: -2px; }
-.tab.active { color: #111; border-bottom-color: #111; font-weight: bold; }
+.empty-templates {
+  padding: var(--s-6);
+  text-align: center;
+  color: var(--ink-lo);
+  border: 1px dashed var(--hairline-2);
+  border-radius: var(--r-3);
+  background: var(--surface-1);
+}
 
-.template-block { border: 2px solid #eee; padding: 24px; }
-.template-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.85rem; font-weight: bold; flex-wrap: wrap; }
-.char-count { font-size: 0.78rem; color: #888; font-weight: normal; }
-.char-count.warning { color: #c00; }
-.copy-btn { margin-left: auto; padding: 4px 12px; border: 1px solid #ddd; background: #fff; font-family: inherit; font-size: 0.78rem; cursor: pointer; }
-.copy-btn:hover { background: #f0f0f0; }
+.tabs {
+  display: flex; flex-wrap: wrap;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: var(--s-5);
+}
+.tab {
+  padding: 10px 16px;
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer; font: inherit;
+  font-size: var(--small); color: var(--ink-lo);
+  margin-bottom: -1px;
+  transition: color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
+}
+.tab:hover { color: var(--ink-hi); }
+.tab.active { color: var(--ink-hi); border-bottom-color: var(--ink-hi); font-weight: 500; }
+.tab:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.template-text { white-space: pre-wrap; line-height: 1.7; font-size: 0.9rem; color: #333; }
-.loom-script { background: #f9f9f9; padding: 16px; }
-.loom-tip { margin-top: 12px; font-size: 0.82rem; color: #888; font-style: italic; }
+.t-block {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-3);
+  padding: var(--s-5);
+  background: var(--paper);
+}
+.t-head {
+  display: flex; align-items: center; gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--hairline);
+  flex-wrap: wrap;
+}
+.t-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  color: var(--ink-hi);
+}
+.char-count {
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  color: var(--ink-lo);
+  letter-spacing: 0.05em;
+}
+.char-count.warn { color: var(--err); }
+.copy-btn {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--mono-cap);
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--ink-mid);
+  cursor: pointer;
+  border-radius: var(--r-full);
+  transition: all var(--dur-2) var(--ease-out);
+}
+.copy-btn:hover { border-color: var(--ink-hi); color: var(--ink-hi); }
+.copy-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.outreach-tips { margin-top: 28px; background: #f9f9f9; border: 1px solid #eee; padding: 20px; }
-.outreach-tips h3 { font-size: 1rem; margin-bottom: 12px; }
-.outreach-tips ul { padding-left: 20px; }
-.outreach-tips li { font-size: 0.88rem; margin-bottom: 8px; line-height: 1.5; color: #555; }
+.t-text {
+  font-family: var(--font-body);
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: var(--body);
+  color: var(--ink-hi);
+  margin: 0;
+  max-width: var(--measure);
+}
+.t-text.loom {
+  background: var(--surface-2);
+  padding: var(--s-4);
+  border-radius: var(--r-2);
+}
+.loom-tip {
+  margin-top: var(--s-3);
+  font-size: var(--small);
+  color: var(--ink-lo);
+  font-style: italic;
+}
+
+.tips {
+  margin-top: var(--s-6);
+  padding: var(--s-5);
+  background: var(--brand-wash);
+  border: 1px solid color-mix(in oklab, var(--brand), transparent 85%);
+  border-radius: var(--r-3);
+}
+.tips ul { margin: var(--s-3) 0 0; padding-left: var(--s-5); }
+.tips li {
+  font-size: var(--small);
+  color: var(--ink);
+  line-height: 1.6;
+  margin-bottom: var(--s-2);
+}
 </style>
