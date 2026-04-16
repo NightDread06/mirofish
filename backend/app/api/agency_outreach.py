@@ -9,6 +9,8 @@ GET  /api/agency/outreach/campaign/<id>/leads                — List leads for 
 PATCH /api/agency/outreach/leads/<lead_id>                   — Update lead stage / notes
 GET  /api/agency/outreach/campaigns                          — List all campaigns (admin)
 POST /api/agency/outreach/personalise                        — Generate personalised opener for a lead
+POST /api/agency/outreach/campaign/<id>/scout                — Run Google Maps scout immediately
+POST /api/agency/outreach/campaign/<id>/email-sequence/start — Start email sequence for leads
 """
 
 from flask import Blueprint, request, jsonify
@@ -26,8 +28,8 @@ agency_outreach_bp = Blueprint('agency_outreach', __name__)
 
 _VALID_STATUSES = {'draft', 'active', 'paused', 'completed'}
 _VALID_STAGES   = {
-    'imported', 'connection_sent', 'connected',
-    'dm_sent', 'replied', 'booked', 'closed', 'rejected',
+    'imported', 'queued_message', 'connection_sent', 'connected',
+    'dm_sent', 'email_sequence', 'replied', 'booked', 'closed', 'rejected',
 }
 
 
@@ -59,18 +61,30 @@ def create_campaign():
     db.session.add(campaign)
     db.session.flush()  # get the ID before committing
 
-    # Generate templates via Claude
+    manager = AgencyOutreachManager()
+
+    # Generate LinkedIn templates
     try:
-        manager   = AgencyOutreachManager()
-        templates = manager.generate_linkedin_sequence(business_type, target_city)
-        campaign.connection_msg = templates.get('connection_request', '')[:300]
-        campaign.dm_template_1  = templates.get('dm_1', '')
-        campaign.dm_template_2  = templates.get('dm_2', '')
-        campaign.dm_template_3  = templates.get('dm_3', '')
-        campaign.loom_script    = templates.get('loom_script', '')
+        linkedin = manager.generate_linkedin_sequence(business_type, target_city)
+        campaign.connection_msg = linkedin.get('connection_request', '')[:300]
+        campaign.dm_template_1  = linkedin.get('dm_1', '')
+        campaign.dm_template_2  = linkedin.get('dm_2', '')
+        campaign.dm_template_3  = linkedin.get('dm_3', '')
+        campaign.loom_script    = linkedin.get('loom_script', '')
     except Exception as exc:
-        logger.warning(f'Template generation failed for campaign {campaign.id}: {exc}')
-        # Save campaign anyway — admin can retry template generation later
+        logger.warning(f'LinkedIn template generation failed for campaign {campaign.id}: {exc}')
+
+    # Generate email sequence templates
+    try:
+        emails = manager.generate_email_sequence(business_type, target_city)
+        campaign.email_template_1_subject = emails.get('email_1_subject', '')
+        campaign.email_template_1_body    = emails.get('email_1_body', '')
+        campaign.email_template_2_subject = emails.get('email_2_subject', '')
+        campaign.email_template_2_body    = emails.get('email_2_body', '')
+        campaign.email_template_3_subject = emails.get('email_3_subject', '')
+        campaign.email_template_3_body    = emails.get('email_3_body', '')
+    except Exception as exc:
+        logger.warning(f'Email template generation failed for campaign {campaign.id}: {exc}')
 
     db.session.commit()
     return jsonify({'success': True, 'data': campaign.to_dict()}), 201
@@ -114,7 +128,6 @@ def update_campaign(campaign_id: str):
     data = request.get_json(silent=True) or {}
     if 'status' in data and data['status'] in _VALID_STATUSES:
         campaign.status = data['status']
-    # Manual metric updates (agency owner tracks their own outreach)
     for metric in ('leads_total', 'leads_connected', 'leads_replied',
                    'leads_booked', 'leads_closed'):
         if metric in data and isinstance(data[metric], int) and data[metric] >= 0:
@@ -139,16 +152,18 @@ def import_leads(campaign_id: str):
         return jsonify({'success': False, 'error': 'leads must be a JSON array'}), 400
 
     created = 0
-    for raw in leads[:500]:   # hard cap to prevent abuse
+    for raw in leads[:500]:
         if not isinstance(raw, dict):
             continue
         lead = OutreachLead(
             campaign_id=campaign_id,
-            first_name=sanitize_text(str(raw.get('first_name', '')))[:100],
+            first_name   =sanitize_text(str(raw.get('first_name', '')))[:100],
             business_name=sanitize_text(str(raw.get('business_name', '')))[:255],
-            linkedin_url=sanitize_text(str(raw.get('linkedin_url', '')))[:500],
-            city=sanitize_text(str(raw.get('city', '')))[:100],
-            stage='imported',
+            linkedin_url =sanitize_text(str(raw.get('linkedin_url', '')))[:500],
+            city         =sanitize_text(str(raw.get('city', '')))[:100],
+            email        =sanitize_text(str(raw.get('email', '')))[:255] or None,
+            source       =raw.get('source', 'manual')[:50],
+            stage        ='imported',
         )
         db.session.add(lead)
         created += 1
@@ -175,7 +190,11 @@ def list_leads(campaign_id: str):
     if stage:
         q = q.filter_by(stage=stage)
     leads = q.order_by(OutreachLead.added_at.desc()).limit(limit).all()
-    return jsonify({'success': True, 'data': [l.to_dict() for l in leads], 'count': len(leads)})
+    return jsonify({
+        'success': True,
+        'data': [l.to_dict(include_email=True) for l in leads],
+        'count': len(leads),
+    })
 
 
 # ── Update lead stage ─────────────────────────────────────────────────────────
@@ -189,29 +208,26 @@ def update_lead(lead_id: str):
 
     data = request.get_json(silent=True) or {}
     if 'stage' in data and data['stage'] in _VALID_STAGES:
-        lead.stage = data['stage']
-        # Sync campaign connected count
-        if data['stage'] == 'connected':
-            campaign = OutreachCampaign.query.get(lead.campaign_id)
-            if campaign:
+        new_stage = data['stage']
+        lead.stage = new_stage
+        campaign = OutreachCampaign.query.get(lead.campaign_id)
+        if campaign:
+            if new_stage == 'connected':
                 campaign.leads_connected = (campaign.leads_connected or 0) + 1
-        elif data['stage'] == 'replied':
-            campaign = OutreachCampaign.query.get(lead.campaign_id)
-            if campaign:
+            elif new_stage == 'replied':
                 campaign.leads_replied = (campaign.leads_replied or 0) + 1
-        elif data['stage'] == 'booked':
-            campaign = OutreachCampaign.query.get(lead.campaign_id)
-            if campaign:
+            elif new_stage == 'booked':
                 campaign.leads_booked = (campaign.leads_booked or 0) + 1
-        elif data['stage'] == 'closed':
-            campaign = OutreachCampaign.query.get(lead.campaign_id)
-            if campaign:
+            elif new_stage == 'closed':
                 campaign.leads_closed = (campaign.leads_closed or 0) + 1
 
     if 'notes' in data:
         lead.notes = sanitize_text(str(data['notes']))[:2000]
+    if 'email' in data:
+        lead.email = sanitize_text(str(data['email']))[:255] or None
+
     db.session.commit()
-    return jsonify({'success': True, 'data': lead.to_dict()})
+    return jsonify({'success': True, 'data': lead.to_dict(include_email=True)})
 
 
 # ── Personalised opener ───────────────────────────────────────────────────────
@@ -221,7 +237,7 @@ def update_lead(lead_id: str):
 @limiter.limit('30 per hour')
 def personalise_opener():
     """Generate a hyper-personalised opening line for a specific lead."""
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     manager = AgencyOutreachManager()
     opener  = manager.generate_personalised_opener(
         first_name=data.get('first_name', ''),
@@ -230,3 +246,79 @@ def personalise_opener():
         observation=data.get('observation', ''),
     )
     return jsonify({'success': True, 'data': {'opener': opener}})
+
+
+# ── Scout: run Google Maps import now ─────────────────────────────────────────
+
+@agency_outreach_bp.route('/campaign/<campaign_id>/scout', methods=['POST'])
+@require_admin
+@limiter.limit('5 per hour')
+def scout_campaign(campaign_id: str):
+    """Immediately run Google Maps scouting for this campaign."""
+    from ..services.agency_scout import AgencyScout
+
+    campaign = OutreachCampaign.query.filter_by(id=campaign_id).first()
+    if not campaign:
+        return jsonify({'success': False, 'error': 'Campaign not found'}), 404
+
+    if not AgencyScout.is_configured():
+        return jsonify({'success': False, 'error': 'GOOGLE_MAPS_API_KEY not configured'}), 503
+
+    data  = request.get_json(silent=True) or {}
+    limit = min(int(data.get('limit', 20)), 50)
+
+    try:
+        scout   = AgencyScout()
+        created = scout.import_leads_for_campaign(campaign, limit=limit)
+        db.session.commit()
+        return jsonify({'success': True, 'data': {'created': created}})
+    except Exception as exc:
+        logger.error(f'Scout failed for campaign {campaign_id}: {exc}')
+        return jsonify({'success': False, 'error': 'Scout failed — check server logs'}), 500
+
+
+# ── Email sequence: start for selected leads ──────────────────────────────────
+
+@agency_outreach_bp.route('/campaign/<campaign_id>/email-sequence/start', methods=['POST'])
+@require_admin
+@limiter.limit('10 per hour')
+def start_email_sequence(campaign_id: str):
+    """
+    Start the Day-0 email for selected (or all imported) leads.
+    Body: {"lead_ids": ["...", "..."]}  — omit to start all 'imported' leads.
+    """
+    from .agency_email_service import AgencyEmailService  # local import to avoid circulars
+
+    campaign = OutreachCampaign.query.filter_by(id=campaign_id).first()
+    if not campaign:
+        return jsonify({'success': False, 'error': 'Campaign not found'}), 404
+
+    # Lazy import here to keep top-level imports clean
+    from ..services.agency_email_service import AgencyEmailService as _EmailSvc
+
+    if not _EmailSvc.is_configured():
+        return jsonify({'success': False, 'error': 'SMTP not configured in .env'}), 503
+
+    data     = request.get_json(silent=True) or {}
+    lead_ids = data.get('lead_ids')
+
+    q = OutreachLead.query.filter_by(campaign_id=campaign_id)
+    if lead_ids and isinstance(lead_ids, list):
+        q = q.filter(OutreachLead.id.in_(lead_ids))
+    else:
+        q = q.filter_by(stage='imported')
+
+    leads = q.filter_by(email_sequence_step=0).all()
+
+    svc     = _EmailSvc()
+    started = 0
+    for lead in leads:
+        if not lead.email:
+            continue
+        ok = svc.send_sequence_email(lead, step=1, campaign=campaign)
+        if ok:
+            lead.stage = 'email_sequence'
+            started += 1
+
+    db.session.commit()
+    return jsonify({'success': True, 'data': {'started': started}})

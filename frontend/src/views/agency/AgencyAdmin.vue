@@ -39,6 +39,7 @@
       <div class="admin-tabs">
         <button :class="['tab', { active: activeTab === 'clients' }]" @click="activeTab = 'clients'">Clients</button>
         <button :class="['tab', { active: activeTab === 'outreach' }]" @click="activeTab = 'outreach'">Outreach Campaigns</button>
+        <button :class="['tab', { active: activeTab === 'scheduler' }]" @click="loadScheduler">Scheduler</button>
       </div>
 
       <!-- Clients tab -->
@@ -94,9 +95,8 @@
           No campaigns yet. Create one to generate LinkedIn DM templates.
         </div>
         <div v-else class="campaigns-list">
-          <div v-for="c in campaigns" :key="c.id" class="campaign-card"
-               @click="openCampaign(c)">
-            <div class="campaign-header">
+          <div v-for="c in campaigns" :key="c.id" class="campaign-card">
+            <div class="campaign-header" @click="openCampaign(c)" style="cursor:pointer">
               <strong>{{ c.name }}</strong>
               <span class="badge" :class="c.status">{{ c.status }}</span>
             </div>
@@ -107,7 +107,57 @@
               <span>→ {{ c.metrics?.replied || 0 }} replied</span>
               <span>→ <strong>{{ c.metrics?.closed || 0 }} closed</strong></span>
             </div>
+            <div class="campaign-actions">
+              <button class="action-btn" @click="router.push(`/agency/admin/leads/${c.id}`)">View Leads →</button>
+              <button class="action-btn" @click="openCampaign(c)">Templates</button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Scheduler tab -->
+      <div v-if="activeTab === 'scheduler'" class="scheduler-section">
+        <div class="section-header">
+          <h2>Autonomous Scheduler</h2>
+          <div class="sched-controls">
+            <span class="sched-status" :class="schedulerStatus?.running ? 'running' : 'stopped'">
+              {{ schedulerStatus?.running ? '● Running' : '○ Stopped' }}
+            </span>
+            <button class="action-btn" @click="pauseAll">Pause All</button>
+            <button class="action-btn" @click="resumeAll">Resume All</button>
+          </div>
+        </div>
+        <div v-if="loadingScheduler" class="loading-inline">Loading…</div>
+        <table v-else-if="schedulerStatus" class="data-table">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>ID</th>
+              <th>Next Run</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="job in schedulerStatus.jobs" :key="job.id">
+              <td><strong>{{ job.name }}</strong></td>
+              <td><code>{{ job.id }}</code></td>
+              <td>{{ job.next_run_time ? formatDate(job.next_run_time) : 'Paused' }}</td>
+              <td>
+                <button class="action-btn" @click="triggerJob(job.id)">
+                  {{ triggeringJob === job.id ? 'Running…' : 'Run Now' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="sched-help">
+          <strong>Jobs:</strong>
+          <ul>
+            <li><code>daily_scout</code> — 08:00 daily: import new prospects from Google Maps</li>
+            <li><code>check_replies</code> — every 15 min: poll inbox, run AI chat closer, send replies</li>
+            <li><code>follow_ups</code> — every 30 min: send Day-3 and Day-7 sequence emails</li>
+            <li><code>publish_posts</code> — 23:00 daily: push tomorrow's approved posts to Buffer</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -156,7 +206,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getDashboardMetrics, getClients, listCampaigns, createCampaign } from '../../api/agency.js'
+import {
+  getDashboardMetrics, getClients, listCampaigns, createCampaign,
+  getSchedulerStatus, runSchedulerJob, pauseScheduler, resumeScheduler,
+} from '../../api/agency.js'
 import OutreachTemplates from '../../components/agency/OutreachTemplates.vue'
 import { useRouter } from 'vue-router'
 
@@ -173,6 +226,11 @@ const showNewCampaign  = ref(false)
 const selectedCampaign = ref(null)
 const creatingCampaign = ref(false)
 const campaignError    = ref('')
+
+// Scheduler
+const schedulerStatus  = ref(null)
+const loadingScheduler = ref(false)
+const triggeringJob    = ref('')
 
 const newCampaign = ref({ name: '', business_type: 'gym', target_city: '' })
 
@@ -217,15 +275,46 @@ async function createNewCampaign() {
   }
 }
 
+async function loadScheduler() {
+  activeTab.value = 'scheduler'
+  if (schedulerStatus.value) return
+  loadingScheduler.value = true
+  try {
+    const res = await getSchedulerStatus()
+    schedulerStatus.value = res.data.data
+  } catch { /* scheduler may not be running */ }
+  finally { loadingScheduler.value = false }
+}
+
+async function triggerJob(jobId) {
+  triggeringJob.value = jobId
+  try {
+    await runSchedulerJob(jobId)
+    setTimeout(() => { triggeringJob.value = '' }, 3000)
+  } catch { triggeringJob.value = '' }
+}
+
+async function pauseAll() {
+  await pauseScheduler()
+  schedulerStatus.value = null
+  await loadScheduler()
+}
+
+async function resumeAll() {
+  await resumeScheduler()
+  schedulerStatus.value = null
+  await loadScheduler()
+}
+
 onMounted(async () => {
   const [m, c, camp] = await Promise.allSettled([
     getDashboardMetrics(),
     getClients(),
     listCampaigns(),
   ])
-  if (m.status === 'fulfilled') metrics.value = m.value.data
-  if (c.status === 'fulfilled') clients.value = c.value.data || []
-  if (camp.status === 'fulfilled') campaigns.value = camp.value.data || []
+  if (m.status === 'fulfilled') metrics.value = m.value.data?.data || m.value.data
+  if (c.status === 'fulfilled') clients.value = c.value.data?.data || c.value.data || []
+  if (camp.status === 'fulfilled') campaigns.value = camp.value.data?.data || camp.value.data || []
   loadingClients.value = false
   loadingCampaigns.value = false
 })
@@ -294,4 +383,19 @@ onMounted(async () => {
 .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid #ccc; font-family: inherit; font-size: 0.9rem; box-sizing: border-box; }
 .form-hint { font-size: 0.82rem; color: #888; margin-bottom: 16px; }
 .form-error { color: #c00; font-size: 0.85rem; margin-bottom: 12px; }
+
+/* Campaign actions */
+.campaign-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
+
+/* Scheduler tab */
+.scheduler-section {}
+.sched-controls { display: flex; align-items: center; gap: 12px; }
+.sched-status { font-size: 0.85rem; font-weight: bold; padding: 4px 10px; border: 1px solid; }
+.sched-status.running { color: #090; border-color: #090; }
+.sched-status.stopped { color: #888; border-color: #888; }
+.data-table code { font-size: 0.8rem; background: #f0f0f0; padding: 2px 6px; }
+.sched-help { margin-top: 24px; padding: 20px; background: #f9f9f9; border: 1px solid #eee; font-size: 0.85rem; }
+.sched-help ul { margin-top: 10px; padding-left: 20px; }
+.sched-help li { margin-bottom: 6px; line-height: 1.5; }
+.sched-help code { background: #e8e8e8; padding: 1px 5px; font-size: 0.8rem; }
 </style>

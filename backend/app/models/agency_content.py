@@ -82,6 +82,11 @@ class ContentPost(db.Model):
     is_approved        = db.Column(db.Boolean, default=False)
     revision_note      = db.Column(db.Text)
 
+    # Buffer publishing tracking
+    buffer_update_id    = db.Column(db.String(100))   # Buffer update ID after push
+    buffer_scheduled_at = db.Column(db.DateTime)      # When pushed to Buffer
+    published_at        = db.Column(db.DateTime)      # Confirmed published timestamp
+
     package = db.relationship('ContentPackage', back_populates='posts')
 
     def to_dict(self):
@@ -97,4 +102,7 @@ class ContentPost(db.Model):
             'post_type': self.post_type,
             'is_approved': self.is_approved,
             'revision_note': self.revision_note,
+            'buffer_update_id': self.buffer_update_id,
+            'buffer_scheduled_at': self.buffer_scheduled_at.isoformat() if self.buffer_scheduled_at else None,
+            'published_at': self.published_at.isoformat() if self.published_at else None,
         }

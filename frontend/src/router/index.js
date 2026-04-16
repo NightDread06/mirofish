@@ -14,6 +14,7 @@ const AgencyPortal     = () => import('../views/agency/AgencyPortal.vue')
 const AgencyContent    = () => import('../views/agency/AgencyContent.vue')
 const AgencyAdmin      = () => import('../views/agency/AgencyAdmin.vue')
 const AgencyPrivacy    = () => import('../views/agency/AgencyPrivacy.vue')
+const AgencyLeads      = () => import('../views/agency/AgencyLeads.vue')
 
 const routes = [
   // ── Existing MiroFish simulation routes (unchanged) ─────────────────────
@@ -91,6 +92,13 @@ const routes = [
     path: '/agency/admin',
     name: 'AgencyAdmin',
     component: AgencyAdmin,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/agency/admin/leads/:campaignId',
+    name: 'AgencyLeads',
+    component: AgencyLeads,
+    props: true,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 ]
