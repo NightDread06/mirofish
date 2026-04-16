@@ -1,15 +1,25 @@
 <template>
   <Transition name="slide-up">
-    <div v-if="showBanner" class="cookie-banner">
+    <div
+      v-if="showBanner"
+      class="cookie-banner cagency"
+      role="region"
+      aria-label="Cookie notice"
+    >
       <div class="cookie-inner">
         <div class="cookie-text">
-          <strong>Cookies</strong> — We use only essential session cookies required for authentication.
-          No advertising or tracking cookies.
-          <router-link to="/agency/privacy">Privacy Policy →</router-link>
+          <span class="ca-kicker">Cookies</span>
+          <p>
+            We use only essential session cookies required for authentication.
+            No advertising or tracking cookies.
+            <router-link to="/agency/privacy">Privacy policy →</router-link>
+          </p>
         </div>
         <div class="cookie-actions">
-          <button class="btn-accept" @click="accept">Accept</button>
-          <router-link to="/agency/privacy" class="btn-learn">Learn More</router-link>
+          <router-link to="/agency/privacy" class="ca-btn secondary on-dark">
+            Learn more
+          </router-link>
+          <button class="ca-btn on-dark" @click="accept">Accept</button>
         </div>
       </div>
     </div>
@@ -35,57 +45,52 @@ function accept() {
 <style scoped>
 .cookie-banner {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #111;
-  color: #fff;
-  padding: 16px 24px;
+  bottom: 0; left: 0; right: 0;
+  background: color-mix(in oklab, var(--void), transparent 8%);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  color: var(--moon);
+  padding: var(--s-4) var(--s-5);
   z-index: 2000;
-  font-family: 'Courier New', monospace;
-  border-top: 2px solid #fff;
+  border-top: 1px solid color-mix(in oklab, var(--moon), transparent 88%);
+  box-shadow: 0 -12px 32px -16px oklch(0.10 0.02 270 / 0.35);
 }
 .cookie-inner {
-  max-width: 1100px;
+  max-width: var(--page);
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--s-5);
   flex-wrap: wrap;
 }
-.cookie-text {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  flex: 1;
+.cookie-text { flex: 1; min-width: 260px; }
+.cookie-text .ca-kicker { color: var(--moon-soft); }
+.cookie-text p {
+  font-size: var(--small);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  color: color-mix(in oklab, var(--moon), transparent 18%);
+  max-width: 640px;
 }
 .cookie-text a {
-  color: #ccc;
+  color: var(--moon);
+  text-decoration-color: color-mix(in oklab, var(--moon), transparent 55%);
   margin-left: 6px;
 }
 .cookie-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--s-3);
   align-items: center;
   flex-shrink: 0;
 }
-.btn-accept {
-  background: #fff;
-  color: #111;
-  border: 2px solid #fff;
-  padding: 8px 20px;
-  font-family: inherit;
-  font-size: 0.88rem;
-  font-weight: bold;
-  cursor: pointer;
-}
-.btn-accept:hover { background: #eee; }
-.btn-learn {
-  color: #ccc;
-  font-size: 0.85rem;
-  text-decoration: underline;
-}
 
-.slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease; }
-.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: transform var(--dur-4) var(--ease-out),
+              opacity var(--dur-3) var(--ease-out);
+}
+.slide-up-enter-from, .slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
 </style>
