@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><title>Weather Alpha — Opportunities</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --mut:#8b95a7; --acc:#ffd166; --ok:#4ade80; --bad:#f87171; --panel:#131a22; --br:#1f2833; }
+  *{box-sizing:border-box;} body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,sans-serif;}
+  nav{display:flex;gap:18px;padding:14px 22px;border-bottom:1px solid var(--br);background:var(--panel);}
+  nav .brand{font-weight:700;margin-right:auto;} a{color:var(--acc);text-decoration:none;}
+  main{padding:24px;max-width:1200px;margin:auto;} h1{font-size:22px;margin:0 0 20px;}
+  .row{display:flex;gap:12px;align-items:center;margin-bottom:18px;}
+  button{background:var(--acc);color:#222;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--br);border-radius:10px;overflow:hidden;}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--br);} th{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.8px;}
+  .muted{color:var(--mut);} .pos{color:var(--ok);} .neg{color:var(--bad);}
+</style></head><body>
+<nav><span class="brand">weather-alpha</span>
+  <a href="/">Dashboard</a><a href="/portfolio">Portfolio</a><a href="/history">History</a><a href="/opportunities">Opportunities</a>
+</nav>
+<main>
+  <div class="row" style="justify-content:space-between;"><h1>Opportunities</h1>
+    <button onclick="rescan()">Re-scan now</button>
+  </div>
+  <table><thead><tr>
+    <th>Score</th><th>Action</th><th>Market</th><th>Model p</th><th>Adj p</th><th>Market px</th><th>Edge</th><th>Confidence</th><th>Hedge</th>
+  </tr></thead><tbody id="body"><tr><td colspan="9" class="muted">loading…</td></tr></tbody></table>
+</main>
+<script>
+const fmtPct=v=>v==null?'—':(v*100).toFixed(1)+'%';
+const sign=v=>v==null?'':v>=0?'pos':'neg';
+async function load(){
+  const rows=await fetch('/api/opportunities').then(r=>r.json());
+  const body=document.getElementById('body');
+  body.innerHTML=rows.length?rows.map(o=>`
+    <tr>
+      <td><b>${o.score.toFixed(1)}</b></td>
+      <td>${o.action}</td>
+      <td>${escape(o.question).slice(0,80)}</td>
+      <td>${fmtPct(o.p_model)}</td>
+      <td>${fmtPct(o.p_adj)}</td>
+      <td>${fmtPct(o.market_price)}</td>
+      <td class="${sign(o.edge)}">${(o.edge>=0?'+':'')+(o.edge*100).toFixed(1)+'%'}</td>
+      <td>${o.confidence.toFixed(1)}/10</td>
+      <td class="muted">${escape(o.hedge||'—').slice(0,60)}</td>
+    </tr>`).join(''):'<tr><td colspan="9" class="muted">click "Re-scan now" to populate</td></tr>';
+}
+function escape(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function rescan(){ await fetch('/api/rescan',{method:'POST'}); load(); }
+load();setInterval(load,15000);
+</script>
+</body></html>
