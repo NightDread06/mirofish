@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><title>Weather Alpha — Portfolio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --mut:#8b95a7; --acc:#ffd166; --ok:#4ade80; --bad:#f87171; --panel:#131a22; --br:#1f2833; }
+  *{box-sizing:border-box;} body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,sans-serif;}
+  nav{display:flex;gap:18px;padding:14px 22px;border-bottom:1px solid var(--br);background:var(--panel);}
+  nav .brand{font-weight:700;margin-right:auto;} a{color:var(--acc);text-decoration:none;}
+  main{padding:24px;max-width:1200px;margin:auto;} h1{font-size:22px;margin:0 0 20px;}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--br);border-radius:10px;overflow:hidden;}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--br);} th{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.8px;}
+  .muted{color:var(--mut);} .pos{color:var(--ok);} .neg{color:var(--bad);}
+  .summary{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
+  .chip{background:var(--panel);border:1px solid var(--br);border-radius:10px;padding:10px 16px;}
+  .chip .k{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.8px;} .chip .v{font-size:18px;font-weight:600;}
+</style></head><body>
+<nav><span class="brand">weather-alpha</span>
+  <a href="/">Dashboard</a><a href="/portfolio">Portfolio</a><a href="/history">History</a><a href="/opportunities">Opportunities</a>
+</nav>
+<main>
+  <h1>Portfolio</h1>
+  <div class="summary" id="summary"></div>
+  <table><thead><tr>
+    <th>Market</th><th>City</th><th>Side</th><th>Size $</th><th>Avg px</th><th>Last mid</th><th>Unrealized</th><th>Opened</th>
+  </tr></thead><tbody id="body"><tr><td colspan="8" class="muted">loading…</td></tr></tbody></table>
+</main>
+<script>
+const fmtUsd=v=>(v==null?'—':(v>=0?'$':'-$')+Math.abs(v).toFixed(2));
+const sign=v=>v==null?'':v>=0?'pos':'neg';
+async function load(){
+  const [bal,pos]=await Promise.all([fetch('/api/balance').then(r=>r.json()),fetch('/api/positions').then(r=>r.json())]);
+  document.getElementById('summary').innerHTML=[
+    ['Bankroll',fmtUsd(bal.bankroll_usd)],['Free cash',fmtUsd(bal.free_cash_usd)],
+    ['At risk',fmtUsd(bal.at_risk_usd)],['Realized today',fmtUsd(bal.realized_pnl_today)],
+    ['Unrealized',fmtUsd(bal.unrealized_pnl)],
+  ].map(([k,v])=>`<div class="chip"><div class="k">${k}</div><div class="v ${sign(parseFloat(v.replace(/[^-0-9.]/g,'')))}">${v}</div></div>`).join('');
+
+  const body=document.getElementById('body');
+  body.innerHTML=pos.length?pos.map(p=>{
+    let upl=null;
+    if(p.last_mid!=null){
+      if(p.side==='BUY_YES') upl=p.size_usd*(p.last_mid-p.avg_price)/Math.max(p.avg_price,1e-4);
+      if(p.side==='BUY_NO')  upl=p.size_usd*((1-p.last_mid)-(1-p.avg_price))/Math.max(1-p.avg_price,1e-4);
+    }
+    return `<tr>
+      <td>${escape(p.question).slice(0,70)}</td>
+      <td>${escape(p.city||'—')}</td>
+      <td>${p.side}</td>
+      <td>${p.size_usd.toFixed(2)}</td>
+      <td>${p.avg_price.toFixed(3)}</td>
+      <td>${p.last_mid==null?'—':p.last_mid.toFixed(3)}</td>
+      <td class="${sign(upl)}">${upl==null?'—':fmtUsd(upl)}</td>
+      <td class="muted">${(p.opened_at||'').slice(0,19)}</td></tr>`;
+  }).join(''):'<tr><td colspan="8" class="muted">no open positions</td></tr>';
+}
+function escape(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+load();setInterval(load,15000);
+</script>
+</body></html>

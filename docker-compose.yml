@@ -12,3 +12,18 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/backend/uploads
+
+  weather-alpha:
+    build:
+      context: .
+      dockerfile: weather_alpha/Dockerfile
+    container_name: weather-alpha
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./weather_alpha/data:/app/weather_alpha/data_volume
+    environment:
+      WEATHER_ALPHA_DB_PATH: /app/weather_alpha/data_volume/data.sqlite

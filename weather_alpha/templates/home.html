@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weather Alpha — Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0b0f14; --fg:#e6edf3; --mut:#8b95a7; --acc:#ffd166; --ok:#4ade80; --bad:#f87171; --panel:#131a22; --br:#1f2833; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  a { color: var(--acc); text-decoration: none; }
+  nav { display:flex; gap:18px; padding:14px 22px; border-bottom:1px solid var(--br); background:var(--panel); }
+  nav .brand { font-weight:700; letter-spacing:.5px; margin-right:auto; }
+  main { padding:24px; max-width:1100px; margin:auto; }
+  h1 { font-size:22px; margin:0 0 18px; }
+  h2 { font-size:14px; text-transform: uppercase; letter-spacing:1px; color:var(--mut); margin:22px 0 10px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--br); border-radius:10px; padding:16px; }
+  .card .k { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.8px; }
+  .card .v { font-size:26px; font-weight:600; margin-top:6px; }
+  .pos { color:var(--ok); } .neg { color:var(--bad); }
+  table { width:100%; border-collapse: collapse; background:var(--panel); border:1px solid var(--br); border-radius:10px; overflow:hidden; }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--br); }
+  th { color:var(--mut); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.8px; }
+  tbody tr:hover { background:#1a2129; }
+  .muted { color:var(--mut); }
+  .row { display:flex; gap:14px; align-items:center; }
+  button { background:var(--acc); color:#222; border:0; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; }
+  button:hover { opacity:.9; }
+  .pill { padding:2px 8px; border-radius:99px; font-size:11px; border:1px solid var(--br); color:var(--mut); }
+  .pill.live { background:#3a1f1f; color:#fca5a5; border-color:#5b2b2b; }
+  .pill.paper { background:#1c2a1c; color:#86efac; border-color:#2d4a2d; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">weather-alpha</span>
+  <a href="/">Dashboard</a>
+  <a href="/portfolio">Portfolio</a>
+  <a href="/history">History</a>
+  <a href="/opportunities">Opportunities</a>
+</nav>
+<main>
+  <div class="row" style="justify-content:space-between; margin-bottom:16px;">
+    <h1>Dashboard</h1>
+    <div class="row">
+      <span id="mode-pill" class="pill paper">PAPER</span>
+      <button onclick="rescan()">Re-scan now</button>
+    </div>
+  </div>
+
+  <div class="cards" id="balance-cards">
+    <div class="card"><div class="k">Bankroll</div><div class="v" id="bankroll">—</div></div>
+    <div class="card"><div class="k">Free cash</div><div class="v" id="free">—</div></div>
+    <div class="card"><div class="k">At risk</div><div class="v" id="risk">—</div></div>
+    <div class="card"><div class="k">Realized today</div><div class="v" id="realized">—</div></div>
+    <div class="card"><div class="k">Unrealized</div><div class="v" id="unrealized">—</div></div>
+  </div>
+
+  <h2>Open positions</h2>
+  <table><thead><tr>
+    <th>Market</th><th>City</th><th>Side</th><th>Size $</th><th>Avg px</th><th>Last mid</th>
+  </tr></thead><tbody id="pos-body"><tr><td colspan="6" class="muted">loading…</td></tr></tbody></table>
+
+  <h2>Top opportunities</h2>
+  <table><thead><tr>
+    <th>Market</th><th>Action</th><th>Market px</th><th>Adj. prob</th><th>Edge</th><th>Score</th>
+  </tr></thead><tbody id="opp-body"><tr><td colspan="6" class="muted">loading…</td></tr></tbody></table>
+
+  <p class="muted" id="footer" style="margin-top:22px;"></p>
+</main>
+
+<script>
+const fmtUsd = v => (v==null?'—':(v>=0?'$':'-$')+Math.abs(v).toFixed(2));
+const fmtPct = v => (v==null?'—':(v*100).toFixed(1)+'%');
+const sign = v => v==null?'': v>=0?'pos':'neg';
+
+async function refresh() {
+  const [status, bal, pos, opp] = await Promise.all([
+    fetch('/api/status').then(r=>r.json()),
+    fetch('/api/balance').then(r=>r.json()),
+    fetch('/api/positions').then(r=>r.json()),
+    fetch('/api/opportunities').then(r=>r.json()),
+  ]);
+  document.getElementById('bankroll').textContent = fmtUsd(bal.bankroll_usd);
+  const free = document.getElementById('free'); free.textContent = fmtUsd(bal.free_cash_usd);
+  document.getElementById('risk').textContent = fmtUsd(bal.at_risk_usd);
+  const re = document.getElementById('realized'); re.textContent = fmtUsd(bal.realized_pnl_today); re.className='v '+sign(bal.realized_pnl_today);
+  const un = document.getElementById('unrealized'); un.textContent = fmtUsd(bal.unrealized_pnl); un.className='v '+sign(bal.unrealized_pnl);
+
+  document.getElementById('mode-pill').textContent = status.live_trading ? 'LIVE' : 'PAPER';
+  document.getElementById('mode-pill').className = 'pill ' + (status.live_trading ? 'live' : 'paper');
+  document.getElementById('footer').textContent =
+    'Last tick: ' + (status.last_tick_at||'—') +
+    (status.kill_switch_tripped ? '  •  KILL-SWITCH TRIPPED: '+status.kill_switch_reason : '');
+
+  const pb = document.getElementById('pos-body');
+  pb.innerHTML = pos.length ? pos.map(p=>`
+    <tr><td>${escape(p.question).slice(0,60)}</td><td>${escape(p.city||'—')}</td>
+    <td>${p.side}</td><td>${p.size_usd.toFixed(2)}</td>
+    <td>${p.avg_price.toFixed(3)}</td>
+    <td>${p.last_mid==null?'—':p.last_mid.toFixed(3)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="muted">no open positions</td></tr>';
+
+  const ob = document.getElementById('opp-body');
+  ob.innerHTML = opp.length ? opp.slice(0,10).map(o=>`
+    <tr><td>${escape(o.question).slice(0,60)}</td>
+    <td>${o.action}</td>
+    <td>${fmtPct(o.market_price)}</td>
+    <td>${fmtPct(o.p_adj)}</td>
+    <td class="${sign(o.edge)}">${(o.edge>=0?'+':'')+(o.edge*100).toFixed(1)+'%'}</td>
+    <td>${o.score.toFixed(1)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="muted">no opportunities yet — click "Re-scan now"</td></tr>';
+}
+function escape(s){return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function rescan(){ await fetch('/api/rescan',{method:'POST'}); refresh(); }
+refresh(); setInterval(refresh, 15000);
+</script>
+</body>
+</html>

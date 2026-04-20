@@ -58,3 +58,9 @@ backend/uploads/
 
 # Docker 数据
 data/
+
+# Weather Alpha
+weather_alpha/data.sqlite*
+weather_alpha/data_volume/
+weather_alpha/.venv/
+weather_alpha/journal/
